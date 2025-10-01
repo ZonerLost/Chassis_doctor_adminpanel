@@ -1,190 +1,292 @@
 import React, { useMemo } from "react";
-import KpiTiles from "../Components/dashboard/KpiTiles";
-import TrendsMini from "../Components/dashboard/TrendsMini";
-import ActivityFeed from "../Components/dashboard/ActivityFeed";
-import QuickActions from "../Components/dashboard/QuickActions";
-import SystemHealth from "../Components/dashboard/SystemHealth";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  BarChart,
+  Bar,
+  Legend,
+} from "recharts";
+import KpiTiles from "../components/dashboard/KpiTiles";
+import TrendsMini from "../components/dashboard/TrendsMini";
+import ActivityFeed from "../components/dashboard/ActivityFeed";
+import QuickActions from "../components/dashboard/QuickActions";
+import SystemHealth from "../components/dashboard/SystemHealth";
 
-const COLORS = {
-  bg: "#0B0B0F",
-  bg2: "#12131A",
-  card: "#161821",
-  text: "#E6E8F0",
-  text2: "#A3A7B7",
-  gold: "#D4AF37",
-  purple: "#6E56CF",
-  ring: "rgba(110,86,207,0.25)",
-};
+export default function MainDashboard() {
+  const COLORS = {
+    bg: "#0B0B0F",
+    bg2: "#12131A",
+    card: "#161821",
+    text: "#E6E8F0",
+    text2: "#A3A7B7",
+    gold: "#D4AF37",
+    purple: "#6E56CF",
+    ring: "rgba(110,86,207,0.25)",
+  };
 
-const DashboardContent = () => {
-  // --- Mock KPI data (replace from API later) ---
+  // mock KPIs & trends (keep real data hookup later)
   const kpis = useMemo(
     () => [
-      { key: "mau", label: "MAU", value: 239000, change: 6.08 }, // Monthly Active Users
+      { key: "mau", label: "MAU", value: 239000, change: 6.08 },
       { key: "new_signups", label: "New Signups", value: 1156, change: 15.03 },
       {
         key: "conversion",
-        label: "Paid/VIP Conversion",
+        label: "Conversion",
         value: 7.2,
         change: 0.42,
         isPercent: true,
-      },
-      {
-        key: "churn",
-        label: "Churn",
-        value: 2.4,
-        change: -0.18,
-        isPercent: true,
-      },
-      {
-        key: "arpu",
-        label: "ARPU",
-        value: 19.95,
-        change: 1.12,
-        isCurrency: true,
       },
     ],
     []
   );
 
-  // --- CSV export for KPIs ---
-  const exportKpis = () => {
-    const headers = ["Metric", "Value", "Change"];
-    const rows = kpis.map((k) => {
-      const v = k.isCurrency
-        ? `$${k.value.toFixed(2)}`
-        : k.isPercent
-        ? `${k.value.toFixed(2)}%`
-        : k.value.toLocaleString();
-      const c = `${k.change >= 0 ? "+" : ""}${k.change.toFixed(2)}%`;
-      return [k.label, v, c];
-    });
-    const csv = [headers, ...rows]
-      .map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `kpis_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // --- Mock trends data ---
-  const trends = {
-    subs: [
-      { m: "Jan", cur: 1200, prev: 980 },
-      { m: "Feb", cur: 1320, prev: 1100 },
-      { m: "Mar", cur: 1500, prev: 1200 },
-      { m: "Apr", cur: 1625, prev: 1350 },
-      { m: "May", cur: 1810, prev: 1500 },
-      { m: "Jun", cur: 2010, prev: 1650 },
-      { m: "Jul", cur: 2230, prev: 1800 },
+  const revenueSeries = useMemo(
+    () => [
+      { month: "Jan", revenue: 12.4, target: 11 },
+      { month: "Feb", revenue: 13.1, target: 12 },
+      { month: "Mar", revenue: 14.8, target: 13 },
+      { month: "Apr", revenue: 15.3, target: 14 },
+      { month: "May", revenue: 16.7, target: 15 },
+      { month: "Jun", revenue: 18.9, target: 17 },
+      { month: "Jul", revenue: 21.2, target: 19 },
     ],
-    revenue: [
-      { m: "Jan", cur: 12.4, prev: 11.8 },
-      { m: "Feb", cur: 13.1, prev: 12.2 },
-      { m: "Mar", cur: 14.8, prev: 13.0 },
-      { m: "Apr", cur: 15.3, prev: 13.9 },
-      { m: "May", cur: 16.7, prev: 14.8 },
-      { m: "Jun", cur: 18.9, prev: 16.2 },
-      { m: "Jul", cur: 21.2, prev: 18.1 },
-    ], // $ in 000s
-    engagement: [
-      { m: "Jan", cur: 28, prev: 22 },
-      { m: "Feb", cur: 31, prev: 25 },
-      { m: "Mar", cur: 34, prev: 27 },
-      { m: "Apr", cur: 36, prev: 28 },
-      { m: "May", cur: 39, prev: 30 },
-      { m: "Jun", cur: 43, prev: 33 },
-      { m: "Jul", cur: 47, prev: 36 },
-    ], // avg minutes/session
-    redemptions: [
-      { m: "Jan", cur: 220, prev: 180 },
-      { m: "Feb", cur: 240, prev: 195 },
-      { m: "Mar", cur: 260, prev: 210 },
-      { m: "Apr", cur: 300, prev: 230 },
-      { m: "May", cur: 340, prev: 250 },
-      { m: "Jun", cur: 390, prev: 280 },
-      { m: "Jul", cur: 450, prev: 315 },
+    []
+  );
+
+  const engagementSeries = useMemo(
+    () => [
+      { t: "Jan", minutes: 28 },
+      { t: "Feb", minutes: 31 },
+      { t: "Mar", minutes: 34 },
+      { t: "Apr", minutes: 36 },
+      { t: "May", minutes: 39 },
+      { t: "Jun", minutes: 43 },
+      { t: "Jul", minutes: 47 },
     ],
-  };
-
-  // --- Mock activity items ---
-  const activity = [
-    {
-      id: 1,
-      title: "Published coaching video",
-      by: "Russell Davis",
-      when: "2h ago",
-    },
-    { id: 2, title: "PTM sync completed", by: "System", when: "4h ago" },
-    {
-      id: 3,
-      title: "Created event: VIP Mixer",
-      by: "Guy Fortt",
-      when: "Yesterday",
-    },
-    {
-      id: 4,
-      title: "Broker payout batch sent",
-      by: "Finance",
-      when: "2 days ago",
-    },
-    {
-      id: 5,
-      title: "New podcast episode",
-      by: "Calvin Richardson",
-      when: "3 days ago",
-    },
-  ];
-
-  // --- Mock system health ---
-  const health = {
-    ptm: { status: "Operational", lastSync: "Today 09:15", incidents: 0 },
-    payments: { status: "Operational", lastSync: "Today 09:10", incidents: 0 },
-    webhooks: { status: "Degraded", lastSync: "Today 08:51", incidents: 1 },
-  };
+    []
+  );
 
   return (
-    <div className="space-y-5">
-      {/* Top bar: title + export */}
+    <div className="space-y-6">
+      {/* Page header */}
       <div className="flex items-center justify-between">
         <h1
-          className="text-xl md:text-2xl font-semibold"
+          className="text-2xl md:text-3xl font-bold"
           style={{ color: COLORS.text }}
         >
-          Dashboard Overview
+          Dashboard
         </h1>
-        <button
-          onClick={exportKpis}
-          className="px-3 py-2 rounded-xl text-sm font-medium"
-          style={{
-            background: `linear-gradient(90deg, ${COLORS.gold}, ${COLORS.purple})`,
-            color: COLORS.bg,
-          }}
-        >
-          Export KPIs (CSV)
-        </button>
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="text-sm" style={{ color: COLORS.text2 }}>
+            Overview & performance
+          </div>
+        </div>
       </div>
 
       {/* KPI tiles */}
       <KpiTiles kpis={kpis} />
 
-      {/* Trends grid */}
-      <TrendsMini data={trends} />
+      {/* Big charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Revenue (large) */}
+        <div
+          className="lg:col-span-2 rounded-2xl p-4"
+          style={{
+            backgroundColor: COLORS.card,
+            border: `1px solid ${COLORS.ring}`,
+            color: COLORS.text,
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-sm" style={{ color: COLORS.text2 }}>
+                Revenue (×$1k)
+              </div>
+              <div
+                className="text-lg font-semibold"
+                style={{ color: COLORS.text }}
+              >
+                Monthly revenue vs target
+              </div>
+            </div>
+            <div className="text-sm" style={{ color: COLORS.text2 }}>
+              Last 7 months
+            </div>
+          </div>
 
-      {/* Activity + Quick actions */}
-      <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-5">
-        <ActivityFeed items={activity} />
-        <QuickActions />
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChartWrapper data={revenueSeries} colors={COLORS} />
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Right column: engagement + quick actions */}
+        <div className="space-y-4">
+          <div
+            className="rounded-2xl p-4"
+            style={{
+              backgroundColor: COLORS.card,
+              border: `1px solid ${COLORS.ring}`,
+            }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <div className="text-sm" style={{ color: COLORS.text2 }}>
+                  Engagement
+                </div>
+                <div
+                  className="text-lg font-semibold"
+                  style={{ color: COLORS.text }}
+                >
+                  Avg minutes/session
+                </div>
+              </div>
+              <div className="text-xs" style={{ color: COLORS.text2 }}>
+                Trend
+              </div>
+            </div>
+            <div className="h-36">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={engagementSeries}>
+                  <CartesianGrid
+                    stroke="rgba(255,255,255,0.03)"
+                    vertical={false}
+                  />
+                  <XAxis dataKey="t" tick={{ fill: COLORS.text2 }} />
+                  <YAxis tick={{ fill: COLORS.text2 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#0F1118",
+                      border: `1px solid ${COLORS.ring}`,
+                      color: COLORS.text,
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="minutes"
+                    stroke={COLORS.gold}
+                    strokeWidth={3}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl p-4"
+            style={{
+              backgroundColor: COLORS.card,
+              border: `1px solid ${COLORS.ring}`,
+            }}
+          >
+            <QuickActions />
+          </div>
+        </div>
       </div>
 
-      {/* System health */}
-      <SystemHealth health={health} />
+      {/* Trends + Activity */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div>
+          <TrendsMini
+            data={{
+              subs: revenueSeries.map((r) => ({
+                m: r.month,
+                cur: r.revenue,
+                prev: r.target,
+              })),
+              revenue: revenueSeries.map((r) => ({
+                m: r.month,
+                cur: r.revenue,
+                prev: r.target,
+              })),
+              engagement: engagementSeries.map((e) => ({
+                m: e.t,
+                cur: e.minutes,
+                prev: Math.max(0, e.minutes - 3),
+              })),
+            }}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <ActivityFeed
+            items={[
+              {
+                id: 1,
+                title: "Published new coaching video",
+                by: "Russell Davis",
+                when: "2h ago",
+              },
+              {
+                id: 2,
+                title: "Chassis diagnostic updated",
+                by: "System",
+                when: "4h ago",
+              },
+              {
+                id: 3,
+                title: "New VIP signup",
+                by: "Marketing",
+                when: "Yesterday",
+              },
+            ]}
+          />
+          <SystemHealth
+            health={{
+              ptm: {
+                status: "Operational",
+                lastSync: "Today 09:15",
+                incidents: 0,
+              },
+              payments: {
+                status: "Operational",
+                lastSync: "Today 09:10",
+                incidents: 0,
+              },
+              webhooks: {
+                status: "Degraded",
+                lastSync: "Today 08:51",
+                incidents: 1,
+              },
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
-};
+}
 
-export default DashboardContent;
+/* ---------- small helper: composed chart using existing recharts pieces ---------- */
+function ComposedChartWrapper({ data = [], colors }) {
+  // use BarChart + Line overlay
+  return (
+    <BarChart data={data} margin={{ top: 8, right: 18, left: 0, bottom: 0 }}>
+      <CartesianGrid stroke="rgba(255,255,255,0.03)" vertical={false} />
+      <XAxis dataKey="month" tick={{ fill: colors.text2 }} />
+      <YAxis tick={{ fill: colors.text2 }} />
+      <Tooltip
+        contentStyle={{
+          background: "#0F1118",
+          border: `1px solid ${colors.ring}`,
+          color: colors.text,
+        }}
+      />
+      <Legend wrapperStyle={{ color: colors.text2 }} />
+      <Bar dataKey="revenue" fill={colors.gold} radius={[6, 6, 0, 0]} />
+      <Line
+        type="monotone"
+        dataKey="target"
+        stroke={colors.purple}
+        strokeWidth={2}
+        dot={false}
+      />
+    </BarChart>
+  );
+}

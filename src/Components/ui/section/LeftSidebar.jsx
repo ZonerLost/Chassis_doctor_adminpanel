@@ -1,59 +1,84 @@
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   MdDashboard,
   MdPeople,
   MdLibraryBooks,
-  MdEvent,
-  MdLocalOffer,
+  MdMenuBook,
+  MdAnalytics,
   MdSupervisedUserCircle,
   MdCampaign,
   MdSettings,
   MdLogout,
+  MdKeyboardArrowRight,
+  MdBuild,
 } from "react-icons/md";
-import { useLocation, Link } from "react-router-dom";
-import { IoClose } from "react-icons/io5";
-import React from "react";
-
-/**
- * Luxe Dark Theme Tokens (from your spec)
- */
-const COLORS = {
-  bg: "#0B0B0F", // Onyx
-  bg2: "#12131A", // Charcoal
-  card: "#161821", // Card
-  text: "#E6E8F0", // Primary text
-  text2: "#A3A7B7", // Secondary text
-  gold: "#D4AF37", // Luxe Gold
-  purple: "#6E56CF", // Royal Purple
-  ring: "rgba(110,86,207,0.35)",
-};
+import { useTheme } from "../../../contexts/ThemeContext";
 
 const menuItems = [
-  { icon: MdDashboard, label: "Dashboard", path: "/" },
-  { icon: MdPeople, label: "Users & Memberships", path: "/users-memberships" },
-  { icon: MdLibraryBooks, label: "Content", path: "/content" },
-  { icon: MdEvent, label: "Live & Events", path: "/live-events" },
-  { icon: MdLocalOffer, label: "Deals & Partners (PTM)", path: "/deals" },
   {
-    icon: MdSupervisedUserCircle,
-    label: "Brokers & Referrals",
-    path: "/brokers",
+    icon: MdDashboard,
+    label: "Dashboard",
+    path: "/",
+    description: "Overview & Analytics",
+    color: "#D4AF37",
   },
-  { icon: MdCampaign, label: "Messaging & Community", path: "/messaging" },
   {
-    icon: MdSettings,
-    label: "Support / Media / Settings",
-    path: "/support-settings",
+    icon: MdPeople,
+    label: "Users & Memberships",
+    path: "/users-memberships",
+    description: "Manage Users",
+    color: "#D4AF37",
+  },
+  {
+    icon: MdBuild,
+    label: "Chassis Doctor",
+    path: "/chassis-doctor",
+    description: "Diagnostic System",
+    color: "#D4AF37",
+  },
+  {
+    icon: MdLibraryBooks,
+    label: "Courses",
+    path: "/courses",
+    description: "Media Library",
+    color: "#D4AF37",
+  },
+  {
+    icon: MdMenuBook,
+    label: "Knowledge",
+    path: "/knowledge",
+    description: "Articles, Categories & Revisions",
+    color: "#D4AF37",
+  },
+  {
+    icon: MdAnalytics,
+    label: "Analytics",
+    path: "/analytics",
+    description: "Reporting & KPIs",
+    color: "#D4AF37",
   },
 ];
 
-const LeftSidebar = ({ isOpen, setIsOpen }) => {
-  const location = useLocation();
-  const isMatch = (p) =>
-    p === "/" ? location.pathname === "/" : location.pathname.startsWith(p);
+export default function LeftSidebar() {
+  const { colors } = useTheme();
+  const loc = useLocation();
+  const navigate = useNavigate();
+  const [isOpen, setIsOpen] = React.useState(false);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
+  // added logout handler: clear auth and navigate to login
+  const handleLogout = (e) => {
+    e.preventDefault();
+    try {
+      localStorage.removeItem("auth_token");
+      sessionStorage.removeItem("auth_token");
+      // remove any other auth/session keys you use
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+    } catch {
+      // ignore
+    }
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -61,124 +86,119 @@ const LeftSidebar = ({ isOpen, setIsOpen }) => {
       {/* Mobile backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-20 lg:hidden"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
+      {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 w-64 z-40 transform
-        ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
-        transition-transform duration-200 ease-in-out flex flex-col`}
+        className={`fixed left-0 top-0 h-full w-72 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         style={{
-          backgroundColor: COLORS.bg,
-          borderRight: `1px solid ${COLORS.card}`,
+          backgroundColor: colors.card,
+          borderRight: `1px solid ${colors.ring}`,
         }}
       >
-        {/* Logo / Brand */}
-        <div
-          className="h-16 px-6 flex items-center justify-between"
-          style={{ backgroundColor: COLORS.bg2 }}
-        >
-          <div className="flex items-center gap-2">
-            {/* Logo image */}
-            <img
-              src="/assets/Logo.png"
-              alt="Sexy Soul Logo"
-              className="h-8 w-8 object-contain"
-            />
-
-            {/* Brand name */}
-            <span
-              className="text-base font-semibold tracking-wide"
-              style={{ color: COLORS.text }}
-            >
-              Sexy Soul Admin
-            </span>
+        <div className="flex flex-col h-full">
+          {/* Logo/Brand Section */}
+          <div className="p-6 border-b" style={{ borderColor: colors.ring }}>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: colors.accent }}
+              >
+                <span className="text-black font-bold text-lg">M</span>
+              </div>
+              <div>
+                <h2
+                  className="font-bold text-lg"
+                  style={{ color: colors.text }}
+                >
+                  MotorSport
+                </h2>
+                <p className="text-xs" style={{ color: colors.text2 }}>
+                  Admin Dashboard
+                </p>
+              </div>
+            </div>
           </div>
 
-          <button
-            className="lg:hidden"
-            onClick={() => setIsOpen(false)}
-            aria-label="Close sidebar"
-          >
-            <IoClose size={22} style={{ color: COLORS.text2 }} />
-          </button>
-        </div>
-
-        {/* Divider */}
-        <div className="px-6">
-          <div style={{ height: 1, backgroundColor: COLORS.card }} />
-        </div>
-
-        {/* Menu */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <ul className="space-y-2">
+          {/* Navigation Menu */}
+          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
             {menuItems.map((item) => {
-              const active = isMatch(item.path);
-              return (
-                <li key={item.label} className="relative pl-2">
-                  {/* Active gradient rail */}
-                  {active && (
-                    <span
-                      className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1.5 rounded-full"
-                      style={{
-                        background: `linear-gradient(180deg, ${COLORS.gold}, ${COLORS.purple})`,
-                      }}
-                    />
-                  )}
+              const Icon = item.icon;
+              const isActive = loc.pathname === item.path;
 
-                  <Link
-                    to={item.path}
-                    aria-current={active ? "page" : undefined}
-                    className="group flex items-center gap-3 px-3 py-2 rounded-xl transition"
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`group flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] ${
+                    isActive ? "shadow-lg" : ""
+                  }`}
+                  style={{
+                    backgroundColor: isActive
+                      ? colors.accent + "20"
+                      : "transparent",
+                    color: isActive ? colors.accent : colors.text,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = colors.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
+                >
+                  <Icon
+                    size={20}
                     style={{
-                      backgroundColor: active ? COLORS.card : "transparent",
-                      color: active ? COLORS.text : COLORS.text2,
-                      boxShadow: active
-                        ? `0 0 0 1px ${COLORS.ring} inset`
-                        : "none",
+                      color: isActive ? colors.accent : colors.text2,
                     }}
-                  >
-                    <item.icon
-                      className="w-5 h-5"
-                      style={{ color: active ? COLORS.gold : COLORS.text2 }}
-                    />
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: active ? COLORS.text : COLORS.text2 }}
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{item.label}</div>
+                    <div
+                      className="text-xs mt-0.5"
+                      style={{ color: colors.text2 }}
                     >
-                      {item.label}
-                    </span>
-                  </Link>
-                </li>
+                      {item.description}
+                    </div>
+                  </div>
+                  <MdKeyboardArrowRight
+                    size={16}
+                    className={`transition-transform duration-200 ${
+                      isActive ? "rotate-90" : "group-hover:translate-x-1"
+                    }`}
+                    style={{ color: colors.text2 }}
+                  />
+                </Link>
               );
             })}
-          </ul>
-        </nav>
+          </nav>
 
-        {/* Footer */}
-        <div className="mt-auto">
-          <div className="px-6">
-            <div style={{ height: 1, backgroundColor: COLORS.card }} />
-          </div>
-
-          <div className="px-3 py-4">
-            <Link
-              to="/auth/login"
+          {/* Footer */}
+          <div className="p-4 border-t" style={{ borderColor: colors.ring }}>
+            <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition"
-              style={{ color: COLORS.text2 }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors"
+              style={{
+                backgroundColor: "rgba(239,68,68,0.06)", // light red background
+                border: `1px solid rgba(239,68,68,0.16)`,
+                color: "#EF4444",
+              }}
             >
-              <MdLogout className="w-5 h-5" style={{ color: COLORS.text2 }} />
-              Logout
-            </Link>
+              <MdLogout size={18} />
+              <div className="text-sm font-medium">Logout</div>
+            </button>
           </div>
         </div>
       </aside>
     </>
   );
-};
-
-export default LeftSidebar;
+}
