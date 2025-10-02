@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "../contexts/ThemeContext.jsx";
-import SystemSettings from "./Auth/SystemSettings.jsx";
+import SystemSettings from "./SystemSettings.jsx";
 import SupportMediaSettingsPage from "./Auth/SupportMediaSettingsPage.jsx";
 import SettingsPanel from "../components/support/SettingsPanel.jsx";
 

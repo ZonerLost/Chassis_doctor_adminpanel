@@ -6,7 +6,11 @@ import SearchInput from "../../components/ui/common/SearchInput";
 // import { updateUser } from "../../data/users.service";
 import { useUsers } from "../../hooks/useUsers";
 import { MdPersonAdd } from "react-icons/md";
+import UserEditorDrawer from "../../components/user/UserEditorDrawer";
 import UserEditorModal from "../../components/user/UserEditorModal";
+import { COLORS } from "../../components/ui/shared/theme.js";
+import Pagination from "../../components/ui/common/Pagination";
+import UserFiltersBar from "../../components/user/UserFiltersBar";
 import UserDirectoryTable from "../../components/user/UserDirectoryTable";
 
 const UserManagement = () => {
