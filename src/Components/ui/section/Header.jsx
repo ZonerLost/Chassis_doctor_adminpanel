@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  MdMenu,
-  MdNotifications,
-  MdAccountCircle,
-  MdSettings,
-  MdLogout,
-  MdClear,
-} from "react-icons/md";
+import { MdMenu, MdNotifications, MdClear } from "react-icons/md";
 import { IoMoon, IoSunny } from "react-icons/io5";
 import { useTheme } from "../../../contexts/ThemeContext";
+import { DARK_COLORS, LIGHT_COLORS } from "../shared/theme";
 
 const Header = ({ onMenuClick }) => {
   const { isDark, colors, toggleTheme } = useTheme();
@@ -39,7 +33,6 @@ const Header = ({ onMenuClick }) => {
     },
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
 
   // Update time every minute
   useEffect(() => {
@@ -50,17 +43,14 @@ const Header = ({ onMenuClick }) => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        !event.target.closest(".notification-dropdown") &&
-        !event.target.closest(".notification-button")
-      ) {
+      let node = event.target;
+      while (node && node.nodeType !== 1) node = node.parentElement;
+      const isNotification =
+        node && node.closest && node.closest(".notification-dropdown");
+      const isNotificationBtn =
+        node && node.closest && node.closest(".notification-button");
+      if (!isNotification && !isNotificationBtn) {
         setShowNotifications(false);
-      }
-      if (
-        !event.target.closest(".profile-dropdown") &&
-        !event.target.closest(".profile-button")
-      ) {
-        setShowProfile(false);
       }
     };
 
@@ -107,16 +97,9 @@ const Header = ({ onMenuClick }) => {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
   };
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
-      localStorage.removeItem("authToken");
-      window.location.href = "/login";
-    }
-  };
-
   return (
     <header
-      className="h-20 w-full flex items-center gap-4 px-4 md:px-6 shadow-lg border-b backdrop-blur-sm relative overflow-visible transition-colors duration-300 sticky top-0"
+      className="sticky top-0 left-0 right-0 h-20 w-full flex items-center gap-4 px-4 md:px-6 shadow-lg border-b backdrop-blur-sm overflow-visible transition-colors duration-300"
       style={{
         backgroundColor: `${colors.card}CC`,
         borderColor: colors.ring,
@@ -151,8 +134,8 @@ const Header = ({ onMenuClick }) => {
         />
       </button>
 
-      {/* Brand / Logo - Only show on mobile */}
-      <div className="flex items-center gap-3 font-bold text-xl relative lg:hidden">
+      {/* Brand / Logo */}
+      <div className="flex items-center gap-3 font-bold text-xl relative">
         <div className="relative">
           <img
             src="/logo.png"
@@ -168,7 +151,9 @@ const Header = ({ onMenuClick }) => {
                 e.target.src = "/assets/logo.png";
               } else {
                 e.target.style.display = "none";
-                e.target.nextElementSibling.style.display = "block";
+                if (e.target.nextElementSibling) {
+                  e.target.nextElementSibling.style.display = "block";
+                }
               }
             }}
           />
@@ -288,7 +273,10 @@ const Header = ({ onMenuClick }) => {
 
             <div className="max-h-64 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-6 text-center" style={{ color: colors.text2 }}>
+                <div
+                  className="p-6 text-center"
+                  style={{ color: colors.text2 }}
+                >
                   No notifications
                 </div>
               ) : (
@@ -360,104 +348,11 @@ const Header = ({ onMenuClick }) => {
         )}
       </div>
 
-      {/* User Profile */}
-      <div className="relative">
-        <button
-          className="profile-button p-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 relative group"
-          style={{
-            backgroundColor: `${colors.hover}40`,
-            color: colors.text2,
-          }}
-          aria-label="User profile"
-          onClick={() => setShowProfile(!showProfile)}
-        >
-          <MdAccountCircle
-            size={20}
-            className="transition-all group-hover:text-white"
-          />
-        </button>
-
-        {/* Profile Dropdown */}
-        {showProfile && (
-          <div
-            className="profile-dropdown fixed right-4 mt-2 w-56 rounded-2xl border shadow-2xl transition-all duration-200"
-            style={{
-              backgroundColor: colors.card,
-              borderColor: colors.ring,
-              zIndex: 9999,
-              top: "80px",
-            }}
-          >
-            <div className="p-4 border-b" style={{ borderColor: colors.ring }}>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: colors.accent + "20" }}
-                >
-                  <MdAccountCircle size={24} style={{ color: colors.accent }} />
-                </div>
-                <div>
-                  <p className="font-medium" style={{ color: colors.text }}>
-                    Admin User
-                  </p>
-                  <p className="text-xs" style={{ color: colors.text2 }}>
-                    admin@motorsport.com
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="py-2">
-              <button
-                className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors duration-150"
-                style={{ color: colors.text }}
-                onMouseEnter={(e) =>
-                  (e.target.style.backgroundColor = colors.hover)
-                }
-                onMouseLeave={(e) =>
-                  (e.target.style.backgroundColor = "transparent")
-                }
-              >
-                <MdAccountCircle size={18} />
-                <span>Profile Settings</span>
-              </button>
-
-              <button
-                className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors duration-150"
-                style={{ color: colors.text }}
-                onMouseEnter={(e) =>
-                  (e.target.style.backgroundColor = colors.hover)
-                }
-                onMouseLeave={(e) =>
-                  (e.target.style.backgroundColor = "transparent")
-                }
-              >
-                <MdSettings size={18} />
-                <span>System Settings</span>
-              </button>
-
-              <hr style={{ borderColor: colors.ring, margin: "8px 0" }} />
-
-              <button
-                onClick={handleLogout}
-                className="w-full px-4 py-3 text-left hover:bg-red-500/20 flex items-center gap-3 transition-colors duration-150"
-                style={{ color: "#ef4444" }}
-              >
-                <MdLogout size={18} />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Breadcrumb */}
       <div
         className="hidden xl:flex items-center gap-2 text-sm px-4 py-2 rounded-full border transition-colors duration-300"
         style={{
-          backgroundColor: isDark
-            ? "rgba(0,0,0,0.2)"
-            : "rgba(255,255,255,0.8)",
+          backgroundColor: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.8)",
           borderColor: colors.ring,
         }}
       >
@@ -465,12 +360,8 @@ const Header = ({ onMenuClick }) => {
           to="/"
           className="font-medium hover:underline transition-colors duration-200 px-2 py-1 rounded-full"
           style={{ color: colors.accent }}
-          onMouseEnter={(e) =>
-            (e.target.style.backgroundColor = colors.hover)
-          }
-          onMouseLeave={(e) =>
-            (e.target.style.backgroundColor = "transparent")
-          }
+          onMouseEnter={(e) => (e.target.style.backgroundColor = colors.hover)}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
         >
           Dashboard
         </Link>
@@ -486,10 +377,10 @@ const Header = ({ onMenuClick }) => {
         </span>
       </div>
 
-      <style jsx>{`
+      {/* CSS animation */}
+      <style>{`
         @keyframes pulse {
-          0%,
-          100% {
+          0%, 100% {
             opacity: 0.1;
           }
           50% {

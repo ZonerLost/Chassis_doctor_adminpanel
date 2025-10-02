@@ -1,21 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useState, useEffect, useContext } from "react";
 import {
   DARK_COLORS,
   LIGHT_COLORS,
   getThemeVars,
-} from "../components/ui/shared/theme";
+} from "../components/ui/shared/theme.js";
 
-// Create the ThemeContext here (don't import it from another file)
-const ThemeContext = createContext();
-
-// Export the useTheme hook for components to use
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
-};
+// Export the context for the hook
+export const ThemeContext = createContext(undefined);
 
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(true);
@@ -59,4 +51,13 @@ export const ThemeProvider = ({ children }) => {
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
+};
+
+// Export the useTheme hook
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
 };

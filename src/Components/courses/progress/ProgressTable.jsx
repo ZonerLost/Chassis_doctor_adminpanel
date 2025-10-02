@@ -10,7 +10,7 @@ export default function ProgressTable({ rows = [], loading }) {
         <thead>
           <tr
             className="uppercase text-xs"
-            style={{ color: colors.accent, backgroundColor: colors.bg2 }}
+            style={{ color: "#d4af37", backgroundColor: colors.bg2 }}
           >
             <th className="px-4 py-3 text-left">Course</th>
             <th className="px-4 py-3 text-left">Learners</th>
@@ -48,8 +48,12 @@ export default function ProgressTable({ rows = [], loading }) {
                 key={r.courseId}
                 style={{ backgroundColor: colors.bg2 }}
                 className="hover:opacity-95"
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.hover)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colors.bg2)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = colors.hover)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = colors.bg2)
+                }
               >
                 <td className="px-4 py-3" style={{ color: colors.text }}>
                   {r.title}

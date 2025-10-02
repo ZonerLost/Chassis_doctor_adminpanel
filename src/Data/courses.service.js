@@ -1,4 +1,5 @@
 import { COURSES, TOPICS, MEDIA_ASSETS, ENROLLMENTS } from "./courses.fixtures";
+import { mockCourseCatalog } from "./courses.fixtures";
 
 const sleep = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 
@@ -137,3 +138,39 @@ export async function listProgress() {
     };
   });
 }
+
+/* ----------------------------- Catalog (Removed) ----------------------------- */
+
+export const courseService = {
+  getCatalog: () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(mockCourseCatalog);
+      }, 1000);
+    });
+  },
+
+  addToCatalog: (course) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ ...course, id: Date.now() });
+      }, 500);
+    });
+  },
+
+  updateCourse: (courseId, updates) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ ...updates, id: courseId });
+      }, 500);
+    });
+  },
+
+  removeFromCatalog: (courseId) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true, id: courseId });
+      }, 500);
+    });
+  },
+};

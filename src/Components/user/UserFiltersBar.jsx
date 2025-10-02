@@ -1,6 +1,6 @@
 import React from "react";
 import SearchInput from "../ui/common/SearchInput";
-import { COLORS } from "../ui/shared/theme";
+import { COLORS } from "../../components/ui/shared/theme.js";
 
 export default function UserFiltersBar({
   search,

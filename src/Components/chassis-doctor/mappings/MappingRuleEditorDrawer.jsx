@@ -1,142 +1,152 @@
-import React, { useEffect, useState } from "react";
-import { COLORS } from "../../ui/shared/theme";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { MdClose } from "react-icons/md";
 
 export default function MappingRuleEditorDrawer({
-  open,
+  isOpen,
   onClose,
+  mapping = null,
   onSave,
-  rule,
-  causes,
-  fixes,
-  selectedSymptom,
-  selectedTrack,
 }) {
-  const [form, setForm] = useState(
-    rule || { causeId: causes?.[0]?.id, fixId: fixes?.[0]?.id, weight: 1 }
-  );
-  useEffect(
-    () =>
-      setForm(
-        rule || { causeId: causes?.[0]?.id, fixId: fixes?.[0]?.id, weight: 1 }
-      ),
-    [rule, causes, fixes]
-  );
-  if (!open) return null;
-  const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/60" onClick={onClose} />
+  const { colors } = useTheme();
+  const [formData, setFormData] = useState({
+    name: "",
+    condition: "",
+    action: "",
+    priority: "Medium",
+    isActive: true,
+  });
+
+  useEffect(() => {
+    if (mapping) {
+      setFormData({
+        name: mapping.name || "",
+        condition: mapping.condition || "",
+        action: mapping.action || "",
+        priority: mapping.priority || "Medium",
+        isActive: mapping.isActive ?? true,
+      });
+    } else {
+      setFormData({
+        name: "",
+        condition: "",
+        action: "",
+        priority: "Medium",
+        isActive: true,
+      });
+    }
+  }, [mapping, isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
-        className="w-full max-w-md h-full p-5 overflow-y-auto"
-        style={{ backgroundColor: COLORS.bg2, color: COLORS.text }}
+        className="relative bg-white rounded-lg p-6 w-full max-w-md mx-4"
+        style={{ backgroundColor: colors.card, color: colors.text }}
       >
-        <h3 className="text-lg font-semibold mb-1">
-          {form?.id ? "Edit" : "Add"} Mapping Rule
-        </h3>
-        <p className="text-xs mb-3" style={{ color: COLORS.text2 }}>
-          Symptom: <b>{selectedSymptom?.name || "—"}</b> • Track:{" "}
-          <b>
-            {selectedTrack
-              ? `${selectedTrack.type}/${selectedTrack.surface}/${selectedTrack.condition}`
-              : "Any"}
-          </b>
-        </p>
-        <div className="space-y-3 mt-2">
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: COLORS.text2 }}
-            >
-              Cause
-            </span>
-            <select
-              className="w-full rounded-xl border px-3 py-2"
-              style={{
-                borderColor: COLORS.ring,
-                backgroundColor: COLORS.hover,
-                color: COLORS.text,
-              }}
-              value={form.causeId}
-              onChange={(e) => patch("causeId", e.target.value)}
-            >
-              {causes?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: COLORS.text2 }}
-            >
-              Fix
-            </span>
-            <select
-              className="w-full rounded-xl border px-3 py-2"
-              style={{
-                borderColor: COLORS.ring,
-                backgroundColor: COLORS.hover,
-                color: COLORS.text,
-              }}
-              value={form.fixId}
-              onChange={(e) => patch("fixId", e.target.value)}
-            >
-              {fixes?.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: COLORS.text2 }}
-            >
-              Weight
-            </span>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">
+            {mapping ? "Edit Mapping Rule" : "Add Mapping Rule"}
+          </h2>
+          <button onClick={onClose}>
+            <MdClose size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Name</label>
             <input
-              type="number"
-              min={1}
-              max={5}
-              className="w-full rounded-xl border px-3 py-2"
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+              className="w-full px-3 py-2 rounded border"
               style={{
-                borderColor: COLORS.ring,
-                backgroundColor: COLORS.hover,
-                color: COLORS.text,
+                backgroundColor: colors.bg2,
+                borderColor: colors.ring,
+                color: colors.text,
               }}
-              value={form.weight}
-              onChange={(e) => patch("weight", Number(e.target.value || 1))}
+              required
             />
-          </label>
-        </div>
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            className="px-4 py-2 rounded-xl border"
-            style={{
-              borderColor: COLORS.ring,
-              backgroundColor: COLORS.hover,
-              color: COLORS.text2,
-            }}
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-4 py-2 rounded-xl border"
-            style={{
-              borderColor: "#D4AF37",
-              backgroundColor: "#D4AF3726",
-              color: "#D4AF37",
-            }}
-            onClick={() => onSave(form)}
-          >
-            Save
-          </button>
-        </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Condition</label>
+            <textarea
+              value={formData.condition}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  condition: e.target.value,
+                }))
+              }
+              className="w-full px-3 py-2 rounded border h-20"
+              style={{
+                backgroundColor: colors.bg2,
+                borderColor: colors.ring,
+                color: colors.text,
+              }}
+              placeholder="e.g., symptom = 'Oversteer' AND severity > 'Medium'"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Action</label>
+            <input
+              type="text"
+              value={formData.action}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, action: e.target.value }))
+              }
+              className="w-full px-3 py-2 rounded border"
+              style={{
+                backgroundColor: colors.bg2,
+                borderColor: colors.ring,
+                color: colors.text,
+              }}
+              placeholder="e.g., Increase rear wing by 2 clicks"
+              required
+            />
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 rounded border"
+              style={{
+                borderColor: colors.ring,
+                color: colors.text2,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 rounded"
+              style={{
+                backgroundColor: colors.accent,
+                color: "#000",
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

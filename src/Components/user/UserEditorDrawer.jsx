@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { COLORS } from "../ui/shared/theme";
+import { COLORS } from "../ui/shared/theme.js";
 
 export default function UserEditorDrawer({ open, onClose, user, onSave }) {
   const [form, setForm] = useState(user || null);

@@ -81,3 +81,54 @@ export const ENROLLMENTS = [
     pct: 60,
   },
 ];
+
+export const mockCourseCatalog = [
+  {
+    id: 1,
+    title: "Introduction to Formula 1",
+    level: "beginner",
+    isPaid: false,
+    priceCents: 0,
+    summary: "Learn the basics of Formula 1 racing and history",
+    instructorName: "Lewis Hamilton",
+    instructorEmail: "lewis@motorsport.com",
+    createdAt: "2024-01-15T08:00:00Z",
+    updatedAt: "2024-01-20T10:30:00Z",
+  },
+  {
+    id: 2,
+    title: "Advanced Chassis Setup",
+    level: "advanced",
+    isPaid: true,
+    priceCents: 9999,
+    summary: "Master the art of chassis tuning and optimization",
+    instructorName: "Adrian Newey",
+    instructorEmail: "adrian@motorsport.com",
+    createdAt: "2024-01-10T09:00:00Z",
+    updatedAt: "2024-01-25T14:15:00Z",
+  },
+  {
+    id: 3,
+    title: "Tire Management Strategies",
+    level: "intermediate",
+    isPaid: true,
+    priceCents: 7500,
+    summary: "Understanding tire compounds and race strategy",
+    instructorName: "Pirelli Expert",
+    instructorEmail: "expert@motorsport.com",
+    createdAt: "2024-01-12T11:00:00Z",
+    updatedAt: "2024-01-22T16:45:00Z",
+  },
+];
+
+export const mockCourseMedia = [
+  // Media-related mock data
+];
+
+export const mockCoursePricing = [
+  // Pricing-related mock data
+];
+
+export const mockCourseProgress = [
+  // Progress-related mock data
+];

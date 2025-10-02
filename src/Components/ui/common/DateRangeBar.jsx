@@ -1,5 +1,5 @@
 import React from "react";
-import { COLORS } from "../../../../shared/theme";
+import { COLORS } from "../components/ui/shared/theme.js";
 
 export default function DateRangeBar({ from, to, onFrom, onTo, extra }) {
   return (

@@ -12,7 +12,7 @@ export default function PricingTable({ rows = [], loading, onEdit }) {
         <thead>
           <tr
             className="uppercase text-xs"
-            style={{ color: colors.accent, backgroundColor: colors.hover }}
+            style={{ color: "#d4af37", backgroundColor: colors.hover }}
           >
             <th className="px-4 py-3 text-left">Course</th>
             <th className="px-4 py-3 text-left">Access</th>
@@ -49,8 +49,12 @@ export default function PricingTable({ rows = [], loading, onEdit }) {
               <tr
                 key={p.courseId}
                 style={{ backgroundColor: colors.bg2 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.hover)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colors.bg2)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = colors.hover)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = colors.bg2)
+                }
               >
                 <td className="px-4 py-3" style={{ color: colors.text }}>
                   {p.title}

@@ -117,4 +117,60 @@ export function useCourses(initial = {}) {
   };
 }
 
-export default useCourses;
+export const useCoursesV2 = () => {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchCatalog = async () => {
+    setLoading(true);
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setCourses([
+        {
+          id: 1,
+          title: "Introduction to Formula 1",
+          level: "beginner",
+          isPaid: false,
+          priceCents: 0,
+          summary: "Learn the basics of Formula 1 racing and history",
+        },
+        {
+          id: 2,
+          title: "Advanced Chassis Setup",
+          level: "advanced",
+          isPaid: true,
+          priceCents: 9999,
+          summary: "Master the art of chassis tuning and optimization",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addToCatalog = (course) => {
+    setCourses((prev) => [...prev, { ...course, id: Date.now() }]);
+  };
+
+  const removeFromCatalog = (courseId) => {
+    setCourses((prev) => prev.filter((course) => course.id !== courseId));
+  };
+
+  const updateCourse = (courseId, updates) => {
+    setCourses((prev) =>
+      prev.map((course) =>
+        course.id === courseId ? { ...course, ...updates } : course
+      )
+    );
+  };
+
+  return {
+    courses,
+    loading,
+    fetchCatalog,
+    addToCatalog,
+    removeFromCatalog,
+    updateCourse,
+  };
+};

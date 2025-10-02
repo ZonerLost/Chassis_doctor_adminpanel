@@ -10,7 +10,7 @@ export default function CategoriesTable({ rows = [], loading, onEdit }) {
         <thead>
           <tr
             className="uppercase text-xs"
-            style={{ color: colors.accent, backgroundColor: colors.hover }}
+            style={{ color: "#d4af37", backgroundColor: colors.hover }}
           >
             <th className="px-4 py-3 text-left">Name</th>
             <th className="px-4 py-3 text-right">Actions</th>
@@ -45,8 +45,12 @@ export default function CategoriesTable({ rows = [], loading, onEdit }) {
               <tr
                 key={c.id}
                 style={{ backgroundColor: colors.bg2 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.hover)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colors.bg2)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = colors.hover)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = colors.bg2)
+                }
               >
                 <td className="px-4 py-3" style={{ color: colors.text }}>
                   {c.name}
@@ -56,7 +60,7 @@ export default function CategoriesTable({ rows = [], loading, onEdit }) {
                     className="px-3 py-1.5 rounded-xl border text-xs"
                     style={{
                       borderColor: colors.ring,
-                      backgroundColor: colors.hover,
+                      backgroundColor: colors.bg2,
                       color: colors.text2,
                     }}
                     onClick={() => onEdit && onEdit(c)}

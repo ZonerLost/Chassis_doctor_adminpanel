@@ -1,119 +1,187 @@
-import React, { useEffect, useState } from "react";
-import { COLORS } from "../../ui/shared/theme";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { MdClose } from "react-icons/md";
 
 export default function TrackConfigEditorDrawer({
-  open,
+  isOpen,
   onClose,
+  config = null,
   onSave,
-  track,
 }) {
-  const [form, setForm] = useState(
-    track || { type: "Oval", surface: "Tarmac", condition: "Dry" }
-  );
-  useEffect(
-    () =>
-      setForm(track || { type: "Oval", surface: "Tarmac", condition: "Dry" }),
-    [track]
-  );
-  if (!open) return null;
-  const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/60" onClick={onClose} />
+  const { colors } = useTheme();
+  const [formData, setFormData] = useState({
+    trackName: "",
+    category: "Street Circuit",
+    frontWing: 5,
+    rearWing: 5,
+    suspension: "Medium",
+    brakeBalance: 55,
+    differential: "Open",
+    notes: "",
+  });
+
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        trackName: config.trackName || "",
+        category: config.category || "Street Circuit",
+        frontWing: config.frontWing || 5,
+        rearWing: config.rearWing || 5,
+        suspension: config.suspension || "Medium",
+        brakeBalance: config.brakeBalance || 55,
+        differential: config.differential || "Open",
+        notes: config.notes || "",
+      });
+    } else {
+      setFormData({
+        trackName: "",
+        category: "Street Circuit",
+        frontWing: 5,
+        rearWing: 5,
+        suspension: "Medium",
+        brakeBalance: 55,
+        differential: "Open",
+        notes: "",
+      });
+    }
+  }, [config, isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
-        className="w-full max-w-md h-full p-5 overflow-y-auto"
-        style={{ backgroundColor: COLORS.bg2, color: COLORS.text }}
+        className="relative bg-white rounded-lg p-6 w-full max-w-md mx-4"
+        style={{ backgroundColor: colors.card, color: colors.text }}
       >
-        <h3 className="text-lg font-semibold mb-1">
-          {form?.id ? "Edit" : "Add"} Track Configuration
-        </h3>
-        <div className="space-y-3 mt-4">
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: COLORS.text2 }}
-            >
-              Type
-            </span>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">
+            {config ? "Edit Track Config" : "Add Track Config"}
+          </h2>
+          <button onClick={onClose}>
+            <MdClose size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Track Name</label>
             <input
-              className="w-full rounded-xl border px-3 py-2"
+              type="text"
+              value={formData.trackName}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, trackName: e.target.value }))
+              }
+              className="w-full px-3 py-2 rounded border"
               style={{
-                borderColor: COLORS.ring,
-                backgroundColor: COLORS.hover,
-                color: COLORS.text,
+                backgroundColor: colors.bg2,
+                borderColor: colors.ring,
+                color: colors.text,
               }}
-              value={form.type}
-              onChange={(e) => patch("type", e.target.value)}
+              required
             />
-          </label>
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: COLORS.text2 }}
-            >
-              Surface
-            </span>
-            <select
-              className="w-full rounded-xl border px-3 py-2"
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Front Wing
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={formData.frontWing}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    frontWing: Number(e.target.value),
+                  }))
+                }
+                className="w-full px-3 py-2 rounded border"
+                style={{
+                  backgroundColor: colors.bg2,
+                  borderColor: colors.ring,
+                  color: colors.text,
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Rear Wing
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={formData.rearWing}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    rearWing: Number(e.target.value),
+                  }))
+                }
+                className="w-full px-3 py-2 rounded border"
+                style={{
+                  backgroundColor: colors.bg2,
+                  borderColor: colors.ring,
+                  color: colors.text,
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Notes</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, notes: e.target.value }))
+              }
+              className="w-full px-3 py-2 rounded border h-20"
               style={{
-                borderColor: COLORS.ring,
-                backgroundColor: COLORS.hover,
-                color: COLORS.text,
+                backgroundColor: colors.bg2,
+                borderColor: colors.ring,
+                color: colors.text,
               }}
-              value={form.surface}
-              onChange={(e) => patch("surface", e.target.value)}
-            >
-              <option>Tarmac</option>
-              <option>Dirt</option>
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: COLORS.text2 }}
-            >
-              Condition
-            </span>
-            <select
-              className="w-full rounded-xl border px-3 py-2"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 rounded border"
               style={{
-                borderColor: COLORS.ring,
-                backgroundColor: COLORS.hover,
-                color: COLORS.text,
+                borderColor: colors.ring,
+                color: colors.text2,
               }}
-              value={form.condition}
-              onChange={(e) => patch("condition", e.target.value)}
             >
-              <option>Dry</option>
-              <option>Wet</option>
-            </select>
-          </label>
-        </div>
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            className="px-4 py-2 rounded-xl border"
-            style={{
-              borderColor: COLORS.ring,
-              backgroundColor: COLORS.hover,
-              color: COLORS.text2,
-            }}
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-4 py-2 rounded-xl border"
-            style={{
-              borderColor: "#D4AF37",
-              backgroundColor: "#D4AF3726",
-              color: "#D4AF37",
-            }}
-            onClick={() => onSave(form)}
-          >
-            Save
-          </button>
-        </div>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 rounded"
+              style={{
+                backgroundColor: colors.accent,
+                color: "#000",
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

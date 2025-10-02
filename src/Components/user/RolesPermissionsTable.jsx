@@ -1,5 +1,5 @@
 import React from "react";
-import { COLORS } from "../ui/shared/theme";
+import { COLORS } from "../../components/ui/shared/theme.js";
 
 const ROLE_OPTIONS = [
   { key: "driver", label: "Driver" },

@@ -33,6 +33,33 @@ export async function updateUser(id, patch) {
   return USERS_FIXTURES[idx];
 }
 
+export async function createUser(payload) {
+  await new Promise((r) => setTimeout(r, 120));
+  // Generate an id compatible with existing fixtures (they use 'u_<number>').
+  // Find the largest numeric suffix from ids like 'u_123'
+  let maxN = 0;
+  for (const u of USERS_FIXTURES) {
+    const m = String(u.id).match(/^u_(\d+)$/);
+    if (m) maxN = Math.max(maxN, Number(m[1]));
+  }
+  const id = `u_${maxN + 1}`;
+  const newUser = {
+    id,
+    fullName: payload.fullName || payload.name || "New User",
+    email: payload.email || "",
+    role: payload.role || "driver",
+    status: payload.status || "active",
+    lastLoginAt: payload.lastLoginAt || Date.now(),
+    lastLoginIp: payload.lastLoginIp || "",
+    device: payload.device || "Web",
+    purchasedCourses: payload.purchasedCourses || 0,
+    chassisUses: payload.chassisUses || 0,
+    ...payload,
+  };
+  USERS_FIXTURES.push(newUser);
+  return newUser;
+}
+
 export async function getUser(id) {
   await new Promise((r) => setTimeout(r, 100));
   return USERS_FIXTURES.find((u) => u.id === id);

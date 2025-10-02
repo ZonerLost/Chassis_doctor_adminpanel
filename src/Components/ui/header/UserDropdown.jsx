@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MdLogout } from "react-icons/md";
 import { useTheme } from "../../../contexts/ThemeContext";
 
-export default function UserDropdown({ onClose }) {
+export default function UserDropdown() {
   const navigate = useNavigate();
   const { colors } = useTheme();
 
@@ -13,7 +13,9 @@ export default function UserDropdown({ onClose }) {
       sessionStorage.removeItem("auth_token");
       localStorage.removeItem("user");
       sessionStorage.removeItem("user");
-    } catch (e) {}
+    } catch {
+      // Ignore errors during logout
+    }
     navigate("/login", { replace: true });
   };
 

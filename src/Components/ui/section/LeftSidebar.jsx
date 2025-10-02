@@ -12,6 +12,8 @@ import {
   MdLogout,
   MdKeyboardArrowRight,
   MdBuild,
+  MdMenu,
+  MdClose,
 } from "react-icons/md";
 import { useTheme } from "../../../contexts/ThemeContext";
 
@@ -58,13 +60,28 @@ const menuItems = [
     description: "Reporting & KPIs",
     color: "#D4AF37",
   },
+  {
+    icon: MdSettings,
+    label: "Settings",
+    path: "/settings",
+    description: "Profile, System & Brand",
+    color: "#D4AF37",
+  },
 ];
 
-export default function LeftSidebar() {
+export default function LeftSidebar({
+  isOpen: propIsOpen,
+  setIsOpen: setPropIsOpen,
+}) {
   const { colors } = useTheme();
   const loc = useLocation();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = React.useState(false);
+  // Support controlled mode (DashboardLayout passes isOpen/setIsOpen) or fall back to internal state
+  const [localOpen, setLocalOpen] = React.useState(false);
+  const isControlled =
+    typeof propIsOpen === "boolean" && typeof setPropIsOpen === "function";
+  const isOpen = isControlled ? propIsOpen : localOpen;
+  const setIsOpen = isControlled ? setPropIsOpen : setLocalOpen;
 
   // added logout handler: clear auth and navigate to login
   const handleLogout = (e) => {
@@ -83,6 +100,25 @@ export default function LeftSidebar() {
 
   return (
     <>
+      {/* Mobile menu toggle (hamburger) */}
+      <button
+        onClick={() => setIsOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") setIsOpen(true);
+        }}
+        className="fixed top-4 left-4 lg:hidden p-2 rounded-md shadow-md"
+        style={{
+          backgroundColor: colors.card,
+          border: `1px solid ${colors.ring}`,
+          color: colors.text,
+          zIndex: 9999,
+          cursor: "pointer",
+        }}
+        aria-label="Open sidebar"
+        aria-expanded={isOpen}
+      >
+        <MdMenu size={20} />
+      </button>
       {/* Mobile backdrop */}
       {isOpen && (
         <div
@@ -102,27 +138,16 @@ export default function LeftSidebar() {
         }}
       >
         <div className="flex flex-col h-full">
-          {/* Logo/Brand Section */}
-          <div className="p-6 border-b" style={{ borderColor: colors.ring }}>
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: colors.accent }}
-              >
-                <span className="text-black font-bold text-lg">M</span>
-              </div>
-              <div>
-                <h2
-                  className="font-bold text-lg"
-                  style={{ color: colors.text }}
-                >
-                  MotorSport
-                </h2>
-                <p className="text-xs" style={{ color: colors.text2 }}>
-                  Admin Dashboard
-                </p>
-              </div>
-            </div>
+          {/* Close button on mobile - moved to top right corner */}
+          <div className="p-4 lg:hidden flex justify-end">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-1 rounded-md"
+              style={{ color: colors.text2 }}
+              aria-label="Close sidebar"
+            >
+              <MdClose size={18} />
+            </button>
           </div>
 
           {/* Navigation Menu */}
@@ -144,6 +169,7 @@ export default function LeftSidebar() {
                       : "transparent",
                     color: isActive ? colors.accent : colors.text,
                   }}
+                  onClick={() => setIsOpen(false)}
                   onMouseEnter={(e) => {
                     if (!isActive) {
                       e.currentTarget.style.backgroundColor = colors.hover;

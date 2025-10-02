@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { COLORS } from "../../ui/shared/theme";
+import { COLORS } from "../../ui/shared/theme.js";
 // A very simple JSON view of current rules for export/publish
 export default function DiagnosticChartEditor({ rules, onPublish }) {
   const [text, setText] = useState("");

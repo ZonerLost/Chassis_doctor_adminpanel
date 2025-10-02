@@ -10,7 +10,7 @@ export default function TopicsTable({ rows = [], loading, onEdit }) {
         <thead>
           <tr
             className="uppercase text-xs"
-            style={{ color: colors.accent, backgroundColor: colors.hover }}
+            style={{ color: "#d4af37", backgroundColor: colors.hover }}
           >
             <th className="px-4 py-3 text-left">Topic</th>
             <th className="px-4 py-3 text-left">Order</th>

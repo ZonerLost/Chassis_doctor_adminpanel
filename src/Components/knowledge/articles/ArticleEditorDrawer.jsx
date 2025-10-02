@@ -1,242 +1,262 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useTheme } from "../../../contexts/ThemeContext";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { MdClose } from "react-icons/md";
+
+const COLORS = {
+  bg2: "#12131A",
+  card: "#161821",
+  text: "#E6E8F0",
+  text2: "#A3A7B7",
+  ring: "rgba(110,86,207,0.25)",
+  gold: "#D4AF37",
+  purple: "#6E56CF",
+};
 
 export default function ArticleEditorDrawer({
   open,
+  initial,
   onClose,
   onSave,
-  article,
-  categories,
+  categories = [],
 }) {
-  const { colors } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    categoryId: "",
+    content: "",
+    tags: [],
+    status: "draft",
+  });
 
-  const empty = useMemo(
-    () => ({
-      title: "",
-      categoryId: categories?.[0]?.id,
-      tags: [],
-      status: "draft",
-      publishAt: "",
-      content: "",
-    }),
-    [categories]
-  );
-  const [form, setForm] = useState(article || empty);
-  useEffect(
-    () => setForm(article || empty),
-    [article, categories?.length, empty]
-  );
-  const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
-  // naive tags parsing
-  const tagsText = useMemo(() => (form.tags || []).join(", "), [form.tags]);
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      title: initial?.title || "",
+      categoryId: initial?.categoryId || "",
+      content: initial?.content || "",
+      tags: initial?.tags || [],
+      status: initial?.status || "draft",
+    });
+  }, [open, initial]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => (document.body.style.overflow = prev);
+  }, [open]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/60" onClick={onClose} />
+  const submit = (e) => {
+    e?.preventDefault?.();
+    if (!form.title.trim() || !form.content.trim()) return;
+    onSave?.({
+      ...form,
+      id: initial?.id || `art_${Date.now()}`,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  if (!open || !mounted) return null;
+
+  // button sizing (added so footer renders correctly)
+  const btnHeight = "44px";
+  const btnWidth = "160px";
+  const btnRadius = "8px";
+
+  return createPortal(
+    <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
       <div
-        className="w-full max-w-xl h-full p-5 overflow-y-auto"
-        style={{ backgroundColor: colors.bg2, color: colors.text }}
+        className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div
+        className="relative w-full max-w-md rounded-xl shadow-2xl overflow-hidden"
+        style={{ backgroundColor: COLORS.card, color: COLORS.text }}
+        role="dialog"
+        aria-modal="true"
       >
-        <h3 className="text-lg font-semibold mb-1">
-          {form?.id ? "Edit" : "Add"} Article
-        </h3>
-        <p className="text-xs mb-4" style={{ color: colors.text2 }}>
-          WYSIWYG (basic) — uses HTML content. Paste text/HTML; preview below.
-        </p>
+        <header
+          className="flex items-start justify-between px-6 py-4"
+          style={{ borderBottom: `1px solid ${COLORS.ring}` }}
+        >
+          <div>
+            <h3 className="text-lg font-semibold">
+              {initial ? "Edit Article" : "Add Article"}
+            </h3>
+            <div className="text-xs mt-1" style={{ color: COLORS.text2 }}>
+              Create and manage knowledge base content
+            </div>
+          </div>
 
-        <div className="space-y-3">
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: colors.text2 }}
-            >
-              Title
-            </span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="p-2 rounded-md"
+            style={{ color: COLORS.text2, background: "transparent" }}
+          >
+            <MdClose size={20} />
+          </button>
+        </header>
+
+        <form
+          onSubmit={submit}
+          className="p-6 max-h-[70vh] overflow-y-auto space-y-4"
+        >
+          <div>
+            <label className="text-sm mb-1 block">Title</label>
             <input
-              className="w-full rounded-xl border px-3 py-2"
-              style={{
-                borderColor: colors.ring,
-                backgroundColor: colors.hover,
-                color: colors.text,
-              }}
               value={form.title}
-              onChange={(e) => patch("title", e.target.value)}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, title: e.target.value }))
+              }
+              className="mt-1 w-full rounded-lg px-3 py-2 text-sm"
+              style={{
+                backgroundColor: COLORS.bg2,
+                color: COLORS.text,
+                border: `1px solid ${COLORS.ring}`,
+              }}
+              required
             />
-          </label>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span
-                className="block text-xs mb-1"
-                style={{ color: colors.text2 }}
-              >
-                Category
-              </span>
+            <div>
+              <label className="text-sm mb-1 block">Category</label>
               <select
-                className="w-full rounded-xl border px-3 py-2"
+                value={form.category}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, category: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg px-2 h-10 text-sm"
                 style={{
-                  borderColor: colors.ring,
-                  backgroundColor: colors.hover,
-                  color: colors.text,
+                  backgroundColor: COLORS.bg2,
+                  color: COLORS.text,
+                  border: `1px solid ${COLORS.ring}`,
                 }}
-                value={form.categoryId}
-                onChange={(e) => patch("categoryId", e.target.value)}
               >
-                {categories?.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
+                {(categories.length
+                  ? categories
+                  : ["Technical", "Driving", "Rules"]
+                ).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="block text-sm">
-              <span
-                className="block text-xs mb-1"
-                style={{ color: colors.text2 }}
-              >
-                Status
-              </span>
-              <select
-                className="w-full rounded-xl border px-3 py-2"
-                style={{
-                  borderColor: colors.ring,
-                  backgroundColor: colors.hover,
-                  color: colors.text,
-                }}
-                value={form.status}
-                onChange={(e) => patch("status", e.target.value)}
-              >
-                <option value="draft">Draft</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="published">Published</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span
-                className="block text-xs mb-1"
-                style={{ color: colors.text2 }}
-              >
-                Publish At (optional)
-              </span>
-              <input
-                type="datetime-local"
-                className="w-full rounded-xl border px-3 py-2"
-                style={{
-                  borderColor: colors.ring,
-                  backgroundColor: colors.hover,
-                  color: colors.text,
-                }}
-                value={
-                  form.publishAt
-                    ? new Date(form.publishAt).toISOString().slice(0, 16)
-                    : ""
-                }
-                onChange={(e) =>
-                  patch(
-                    "publishAt",
-                    e.target.value ? new Date(e.target.value).getTime() : ""
-                  )
-                }
-              />
-            </label>
-            <label className="block text-sm">
-              <span
-                className="block text-xs mb-1"
-                style={{ color: colors.text2 }}
-              >
-                Tags (comma separated)
-              </span>
-              <input
-                className="w-full rounded-xl border px-3 py-2"
-                style={{
-                  borderColor: colors.ring,
-                  backgroundColor: colors.hover,
-                  color: colors.text,
-                }}
-                value={tagsText}
-                onChange={(e) =>
-                  patch(
-                    "tags",
-                    e.target.value
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean)
-                  )
-                }
-              />
-            </label>
-          </div>
-
-          {/* Basic WYSIWYG (textarea) */}
-          <label className="block text-sm">
-            <span
-              className="block text-xs mb-1"
-              style={{ color: colors.text2 }}
-            >
-              Content (HTML allowed)
-            </span>
-            <textarea
-              rows={10}
-              className="w-full rounded-xl border px-3 py-2 font-mono text-xs"
-              style={{
-                borderColor: colors.ring,
-                backgroundColor: colors.hover,
-                color: colors.text,
-              }}
-              value={form.content}
-              onChange={(e) => patch("content", e.target.value)}
-            />
-          </label>
-
-          {/* Preview */}
-          <div
-            className="rounded-xl border p-3 text-sm"
-            style={{ borderColor: colors.ring, backgroundColor: colors.hover }}
-          >
-            <div className="text-xs mb-2" style={{ color: colors.text2 }}>
-              Preview
             </div>
-            <div
-              dangerouslySetInnerHTML={{
-                __html: form.content || "<em>No content</em>",
+
+            <div>
+              <label className="text-sm mb-1 block">Status</label>
+              <select
+                value={form.status}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, status: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg px-2 h-10 text-sm"
+                style={{
+                  backgroundColor: COLORS.bg2,
+                  color: COLORS.text,
+                  border: `1px solid ${COLORS.ring}`,
+                }}
+              >
+                <option>Draft</option>
+                <option>Published</option>
+                <option>Archived</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm mb-1 block">Author</label>
+            <input
+              value={form.author}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, author: e.target.value }))
+              }
+              className="mt-1 w-full rounded-lg px-3 py-2 text-sm"
+              style={{
+                backgroundColor: COLORS.bg2,
+                color: COLORS.text,
+                border: `1px solid ${COLORS.ring}`,
               }}
             />
           </div>
-        </div>
 
-        <div className="mt-6 flex items-center justify-end gap-2">
+          <div>
+            <label className="text-sm mb-1 block">Summary</label>
+            <textarea
+              value={form.summary}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, summary: e.target.value }))
+              }
+              className="mt-1 w-full rounded-lg px-3 py-2 text-sm h-20"
+              style={{
+                backgroundColor: COLORS.bg2,
+                color: COLORS.text,
+                border: `1px solid ${COLORS.ring}`,
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm mb-1 block">Content</label>
+            <textarea
+              value={form.content}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, content: e.target.value }))
+              }
+              className="mt-1 w-full rounded-lg px-3 py-2 text-sm h-40"
+              style={{
+                backgroundColor: COLORS.bg2,
+                color: COLORS.text,
+                border: `1px solid ${COLORS.ring}`,
+              }}
+            />
+          </div>
+        </form>
+
+        <footer
+          className="flex items-center justify-center gap-4 px-6 py-4"
+          style={{ borderTop: `1px solid ${COLORS.ring}` }}
+        >
           <button
-            className="px-4 py-2 rounded-xl border"
-            style={{
-              borderColor: colors.ring,
-              backgroundColor: colors.hover,
-              color: colors.text2,
-            }}
+            type="button"
             onClick={onClose}
+            className="text-sm font-medium"
+            style={{
+              height: btnHeight,
+              minWidth: btnWidth,
+              borderRadius: btnRadius,
+              border: `1px solid ${COLORS.ring}`,
+              backgroundColor: COLORS.bg2,
+              color: COLORS.text2,
+            }}
           >
             Cancel
           </button>
+
           <button
-            className="px-4 py-2 rounded-xl border"
+            onClick={submit}
+            className="text-sm font-medium"
             style={{
-              borderColor: "#D4AF37",
-              backgroundColor: "#D4AF3726",
-              color: "#D4AF37",
+              height: btnHeight,
+              minWidth: btnWidth,
+              borderRadius: btnRadius,
+              border: `1px solid ${COLORS.gold || "#D4AF37"}`,
+              backgroundColor: COLORS.gold || "#D4AF37",
+              color: "#0B0B0F",
             }}
-            onClick={() =>
-              onSave(form, { message: form?.id ? "Edited" : "Created" })
-            }
           >
             Save
           </button>
-        </div>
+        </footer>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

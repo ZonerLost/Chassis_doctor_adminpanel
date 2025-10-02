@@ -1,5 +1,6 @@
 import React from "react";
-import { COLORS } from "../ui/shared/theme";
+import { MdEdit } from "react-icons/md";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const RoleBadge = ({ role }) => {
   const colors = {
@@ -43,14 +44,19 @@ export default function UserDirectoryTable({
   onEdit,
   onToggleSuspend,
 }) {
+  const { isDark, colors } = useTheme();
+
+  const headerStyle = isDark
+    ? { color: colors.accent, backgroundColor: "#1a1a1a" }
+    : { color: "#000", backgroundColor: "#fff" };
+
+  const bodyTextColor = isDark ? colors.text : "#000";
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-[860px] w-full text-sm">
         <thead>
-          <tr
-            className="uppercase text-xs"
-            style={{ color: COLORS.accent, backgroundColor: "#f0fdf4" }}
-          >
+          <tr className="uppercase text-xs" style={headerStyle}>
             <th className="px-4 py-3 text-left">User</th>
             <th className="px-4 py-3 text-left">Email</th>
             <th className="px-4 py-3 text-left">Role</th>
@@ -63,14 +69,14 @@ export default function UserDirectoryTable({
         </thead>
         <tbody
           className="divide-y"
-          style={{ borderColor: COLORS.ring, color: COLORS.text }}
+          style={{ borderColor: colors.ring, color: bodyTextColor }}
         >
           {loading ? (
             <tr>
               <td
                 colSpan={8}
                 className="px-4 py-8 text-center"
-                style={{ color: COLORS.text2 }}
+                style={{ color: colors.text2 }}
               >
                 Loading users…
               </td>
@@ -80,7 +86,7 @@ export default function UserDirectoryTable({
               <td
                 colSpan={8}
                 className="px-4 py-10 text-center"
-                style={{ color: COLORS.text2 }}
+                style={{ color: colors.text2 }}
               >
                 No users found.
               </td>
@@ -110,22 +116,25 @@ export default function UserDirectoryTable({
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-2">
                     <button
-                      className="px-3 py-1.5 rounded-xl border text-xs"
+                      className="px-3 py-1.5 rounded-xl border text-xs flex items-center gap-2"
                       style={{
-                        borderColor: COLORS.ring,
-                        backgroundColor: COLORS.hover,
-                        color: COLORS.text2,
+                        borderColor: colors.ring,
+                        backgroundColor: isDark ? colors.hover : "#fff",
+                        color: isDark ? colors.text2 : "#000",
                       }}
                       onClick={() => onEdit?.(u)}
                     >
-                      Edit
+                      <span className="inline-block sm:hidden">
+                        <MdEdit size={16} />
+                      </span>
+                      <span className="hidden sm:inline">Edit</span>
                     </button>
                     <button
                       className="px-3 py-1.5 rounded-xl border text-xs"
                       style={{
-                        borderColor: COLORS.ring,
-                        backgroundColor: COLORS.hover,
-                        color: COLORS.text2,
+                        borderColor: colors.ring,
+                        backgroundColor: isDark ? colors.hover : "#fff",
+                        color: isDark ? colors.text2 : "#000",
                       }}
                       onClick={() => onToggleSuspend?.(u)}
                     >

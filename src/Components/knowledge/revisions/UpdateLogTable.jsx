@@ -10,7 +10,7 @@ export default function UpdateLogTable({ rows = [], loading }) {
         <thead>
           <tr
             className="uppercase text-xs"
-            style={{ color: colors.accent, backgroundColor: colors.bg2 }}
+            style={{ color: "#d4af37", backgroundColor: colors.bg2 }}
           >
             <th className="px-4 py-3 text-left">Article</th>
             <th className="px-4 py-3 text-left">Version</th>

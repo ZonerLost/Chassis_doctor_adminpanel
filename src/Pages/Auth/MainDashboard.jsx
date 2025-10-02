@@ -11,23 +11,15 @@ import {
   Bar,
   Legend,
 } from "recharts";
-import KpiTiles from "../components/dashboard/KpiTiles";
-import TrendsMini from "../components/dashboard/TrendsMini";
-import ActivityFeed from "../components/dashboard/ActivityFeed";
-import QuickActions from "../components/dashboard/QuickActions";
-import SystemHealth from "../components/dashboard/SystemHealth";
+import KpiTiles from "../../components/dashboard/KpiTiles";
+import TrendsMini from "../../components/dashboard/TrendsMini";
+import ActivityFeed from "../../components/dashboard/ActivityFeed";
+import QuickActions from "../../components/dashboard/QuickActions";
+import SystemHealth from "../../components/dashboard/SystemHealth";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export default function MainDashboard() {
-  const COLORS = {
-    bg: "#0B0B0F",
-    bg2: "#12131A",
-    card: "#161821",
-    text: "#E6E8F0",
-    text2: "#A3A7B7",
-    gold: "#D4AF37",
-    purple: "#6E56CF",
-    ring: "rgba(110,86,207,0.25)",
-  };
+  const { colors, isDark } = useTheme();
 
   // mock KPIs & trends (keep real data hookup later)
   const kpis = useMemo(
@@ -77,12 +69,15 @@ export default function MainDashboard() {
       <div className="flex items-center justify-between">
         <h1
           className="text-2xl md:text-3xl font-bold"
-          style={{ color: COLORS.text }}
+          style={{ color: isDark ? colors.text : "#1a1a1a" }}
         >
           Dashboard
         </h1>
         <div className="hidden sm:flex items-center gap-3">
-          <div className="text-sm" style={{ color: COLORS.text2 }}>
+          <div
+            className="text-sm"
+            style={{ color: isDark ? colors.text2 : "#6b7280" }}
+          >
             Overview & performance
           </div>
         </div>
@@ -97,31 +92,31 @@ export default function MainDashboard() {
         <div
           className="lg:col-span-2 rounded-2xl p-4"
           style={{
-            backgroundColor: COLORS.card,
-            border: `1px solid ${COLORS.ring}`,
-            color: COLORS.text,
+            backgroundColor: colors.card,
+            border: `1px solid ${colors.ring}`,
+            color: colors.text,
           }}
         >
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="text-sm" style={{ color: COLORS.text2 }}>
+              <div className="text-sm" style={{ color: colors.text2 }}>
                 Revenue (×$1k)
               </div>
               <div
                 className="text-lg font-semibold"
-                style={{ color: COLORS.text }}
+                style={{ color: colors.text }}
               >
                 Monthly revenue vs target
               </div>
             </div>
-            <div className="text-sm" style={{ color: COLORS.text2 }}>
+            <div className="text-sm" style={{ color: colors.text2 }}>
               Last 7 months
             </div>
           </div>
 
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChartWrapper data={revenueSeries} colors={COLORS} />
+              <ComposedChartWrapper data={revenueSeries} colors={colors} />
             </ResponsiveContainer>
           </div>
         </div>
@@ -131,23 +126,23 @@ export default function MainDashboard() {
           <div
             className="rounded-2xl p-4"
             style={{
-              backgroundColor: COLORS.card,
-              border: `1px solid ${COLORS.ring}`,
+              backgroundColor: colors.card,
+              border: `1px solid ${colors.ring}`,
             }}
           >
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-sm" style={{ color: COLORS.text2 }}>
+                <div className="text-sm" style={{ color: colors.text2 }}>
                   Engagement
                 </div>
                 <div
                   className="text-lg font-semibold"
-                  style={{ color: COLORS.text }}
+                  style={{ color: colors.text }}
                 >
                   Avg minutes/session
                 </div>
               </div>
-              <div className="text-xs" style={{ color: COLORS.text2 }}>
+              <div className="text-xs" style={{ color: colors.text2 }}>
                 Trend
               </div>
             </div>
@@ -158,19 +153,19 @@ export default function MainDashboard() {
                     stroke="rgba(255,255,255,0.03)"
                     vertical={false}
                   />
-                  <XAxis dataKey="t" tick={{ fill: COLORS.text2 }} />
-                  <YAxis tick={{ fill: COLORS.text2 }} />
+                  <XAxis dataKey="t" tick={{ fill: colors.text2 }} />
+                  <YAxis tick={{ fill: colors.text2 }} />
                   <Tooltip
                     contentStyle={{
                       background: "#0F1118",
-                      border: `1px solid ${COLORS.ring}`,
-                      color: COLORS.text,
+                      border: `1px solid ${colors.ring}`,
+                      color: colors.text,
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="minutes"
-                    stroke={COLORS.gold}
+                    stroke={colors.accent}
                     strokeWidth={3}
                     dot={{ r: 3 }}
                   />
@@ -182,8 +177,8 @@ export default function MainDashboard() {
           <div
             className="rounded-2xl p-4"
             style={{
-              backgroundColor: COLORS.card,
-              border: `1px solid ${COLORS.ring}`,
+              backgroundColor: colors.card,
+              border: `1px solid ${colors.ring}`,
             }}
           >
             <QuickActions />
@@ -279,7 +274,7 @@ function ComposedChartWrapper({ data = [], colors }) {
         }}
       />
       <Legend wrapperStyle={{ color: colors.text2 }} />
-      <Bar dataKey="revenue" fill={colors.gold} radius={[6, 6, 0, 0]} />
+      <Bar dataKey="revenue" fill={colors.accent} radius={[6, 6, 0, 0]} />
       <Line
         type="monotone"
         dataKey="target"

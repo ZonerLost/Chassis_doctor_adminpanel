@@ -1,70 +1,54 @@
-import { useState } from "react";
-import { users } from "../Data/users.fixtures";
+import { useEffect, useState } from "react";
+import { listUsers, updateUser, createUser } from "../Data/users.service";
 
 export function useUsers() {
-  const [state, setState] = useState({
-    page: 1,
-    limit: 10,
-    role: "",
-    status: "",
-    search: "",
-  });
-
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Mock data filtering
-  const filteredUsers = users.filter((user) => {
-    if (
-      state.search &&
-      !user.name.toLowerCase().includes(state.search.toLowerCase())
-    ) {
-      return false;
-    }
-    if (state.role && user.role !== state.role) {
-      return false;
-    }
-    if (state.status && user.status !== state.status) {
-      return false;
-    }
-    return true;
-  });
-
-  const total = filteredUsers.length;
-  const rows = filteredUsers.slice(
-    (state.page - 1) * state.limit,
-    state.page * state.limit
-  );
-
-  const setPage = (page) => setState((prev) => ({ ...prev, page }));
-  const setRole = (role) => setState((prev) => ({ ...prev, role, page: 1 }));
-  const setStatus = (status) =>
-    setState((prev) => ({ ...prev, status, page: 1 }));
-  const setSearch = (search) =>
-    setState((prev) => ({ ...prev, search, page: 1 }));
-
-  const toggleSuspend = async () => {
+  const load = async (opts = {}) => {
     setLoading(true);
-    // Mock API call
-    setTimeout(() => setLoading(false), 500);
+    try {
+      const { data } = await listUsers(opts);
+      setRows(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const promote = async () => {
-    setLoading(true);
-    // Mock API call
-    setTimeout(() => setLoading(false), 500);
+  useEffect(() => {
+    load();
+  }, []);
+
+  const save = async (user) => {
+    if (!user?.id) {
+      // create new user and insert it at the top of the current rows so
+      // it's immediately visible on the first page.
+      try {
+        const created = await createUser(user);
+        setRows((prev) => [created, ...prev]);
+        return;
+      } catch (err) {
+        console.error("Failed creating user:", err);
+        await load();
+        throw err;
+      }
+    }
+
+    // optimistic update locally for existing user
+    setRows((prev) =>
+      prev.map((r) => (r.id === user.id ? { ...r, ...user } : r))
+    );
+    try {
+      await updateUser(user.id, user);
+      // reload to ensure server truth
+      await load();
+    } catch (err) {
+      console.error("Failed saving user:", err);
+      // reload to revert optimistic change
+      await load();
+      throw err;
+    }
   };
 
-  return {
-    state,
-    rows,
-    total,
-    loading,
-    search: state.search,
-    setPage,
-    setRole,
-    setStatus,
-    setSearch,
-    toggleSuspend,
-    promote,
-  };
+  return { rows, loading, reload: load, save };
 }

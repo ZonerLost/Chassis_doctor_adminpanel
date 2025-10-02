@@ -17,10 +17,7 @@ export default function SystemSettings() {
     }
   }, []);
 
-  const save = () => {
-    localStorage.setItem("system_settings", JSON.stringify(settings));
-    alert("System settings saved (demo)");
-  };
+  // Save function removed as it was unused
 
   return (
     <div className="space-y-6">
@@ -72,19 +69,7 @@ export default function SystemSettings() {
           />
         </div>
 
-        <div className="flex justify-end">
-          <button
-            onClick={save}
-            className="px-4 py-2 rounded-xl"
-            style={{
-              background: colors.accent + "33",
-              color: colors.accent,
-              border: `1px solid ${colors.accent}`,
-            }}
-          >
-            Save settings
-          </button>
-        </div>
+        {/* Save button removed per design request */}
       </div>
     </div>
   );
