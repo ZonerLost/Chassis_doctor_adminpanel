@@ -5,7 +5,7 @@ import {
   listCauses,
   listFixes,
   evaluateDiagnostic,
-} from "../Data/chassis.service"; // Fixed: capital D in Data
+} from "../data/chassis.service";
 
 export function useMappings({ symptomId, trackTypeId }) {
   const [rules, setRules] = useState([]);

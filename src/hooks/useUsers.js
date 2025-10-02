@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listUsers, updateUser, createUser } from "../Data/users.service";
+import { listUsers, updateUser, createUser } from "../data/users.service";
 
 export function useUsers() {
   const [rows, setRows] = useState([]);

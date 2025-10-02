@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { listCourses, upsertCourse } from "../Data/courses.service";
+import { listCourses, upsertCourse } from "../data/courses.service";
 
 function shallowEqual(a, b) {
   if (a === b) return true;

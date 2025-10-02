@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listRevisions } from "../Data/knowledge.service";
+import { listRevisions } from "../data/knowledge.service";
 
 export function useRevisions({ articleId = null } = {}) {
   const [rows, setRows] = useState([]);

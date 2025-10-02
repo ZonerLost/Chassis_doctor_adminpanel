@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { listMedia, upsertMedia } from "../Data/courses.service";
+import { listMedia, upsertMedia } from "../data/courses.service";
 
 export function useMedia({ courseId }) {
   const [query, setQuery] = useState("");

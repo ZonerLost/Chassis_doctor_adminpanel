@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getChassisStats } from "../Data/analytics.service";
+import { getChassisStats } from "../data/analytics.service";
 
 export function useChassisAnalytics() {
   const [symptoms, setSymptoms] = useState([]);

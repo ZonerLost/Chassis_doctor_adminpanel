@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listCategories, upsertCategory } from "../Data/knowledge.service";
+import { listCategories, upsertCategory } from "../data/knowledge.service";
 
 export function useCategories() {
   const [rows, setRows] = useState([]);

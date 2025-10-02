@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { getCourseStats, listCoursesLookup } from "../Data/analytics.service";
+import { getCourseStats, listCoursesLookup } from "../data/analytics.service";
 
 export function useCourseAnalytics() {
   const [courseId, setCourseId] = useState("");

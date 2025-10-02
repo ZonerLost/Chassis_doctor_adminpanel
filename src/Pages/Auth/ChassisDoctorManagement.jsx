@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
-import SymptomTable from "../../Components/chassis-doctor/symptoms/SymptomTable";
+import SymptomTable from "../../components/chassis-doctor/symptoms/SymptomTable";
 import MappingRulesTable from "../../components/chassis-doctor/mappings/MappingRulesTable";
-import TrackConfigsTable from "../../Components/chassis-doctor/tracks/TrackConfigsTable";
+import TrackConfigsTable from "../../components/chassis-doctor/tracks/TrackConfigsTable";
 import SymptomEditorDrawer from "../../components/chassis-doctor/symptoms/SymptomEditorDrawer";
 import MappingRuleEditorDrawer from "../../components/chassis-doctor/mappings/MappingRuleEditorDrawer";
 import TrackConfigEditorDrawer from "../../components/chassis-doctor/tracks/TrackConfigEditorDrawer";
