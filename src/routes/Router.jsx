@@ -1,9 +1,17 @@
 // src/router/index.jsx
 import React, { Suspense } from "react";
-import { createBrowserRouter, Link } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Link,
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import MainDashboard from "../Pages/Auth/MainDashboard.jsx";
 import { useTheme } from "../contexts/ThemeContext";
+import Login from "../Pages/Auth/Login";
 
 // Error boundary component
 class ErrorBoundary extends React.Component {
@@ -55,7 +63,30 @@ const LoadingSpinner = () => {
   );
 };
 
-// Lazy-load components
+// Fallback components for lazy loading errors (move these BEFORE lazy imports)
+const FailedToLoadUsersPage = () => (
+  <div style={{ padding: 12 }}>Failed to load Users page</div>
+);
+const FailedToLoadChassisDoctorPage = () => (
+  <div style={{ padding: 12 }}>Failed to load Chassis Doctor page</div>
+);
+const FailedToLoadCoursesPage = () => (
+  <div style={{ padding: 12 }}>Failed to load Courses page</div>
+);
+const FailedToLoadKnowledgePage = () => (
+  <div style={{ padding: 12 }}>Failed to load Knowledge page</div>
+);
+const FailedToLoadAnalyticsPage = () => (
+  <div style={{ padding: 12 }}>Failed to load Analytics page</div>
+);
+const FailedToLoadSettingsPage = () => (
+  <div style={{ padding: 12 }}>Failed to load Settings page</div>
+);
+const FailedToLoadLiveEventsPage = () => (
+  <div style={{ padding: 12 }}>Failed to load Live Events page</div>
+);
+
+// Lazy-load components (now safe to reference the above fallbacks)
 const UsersManagement = React.lazy(() =>
   import("../Pages/Auth/UserManagement.jsx").catch(() => ({
     default: () => <FailedToLoadUsersPage />,
@@ -74,30 +105,18 @@ const CoursesManagement = React.lazy(() =>
   }))
 );
 
-// Knowledge module (lazy)
-const FailedToLoadKnowledgePage = () => (
-  <div style={{ padding: 12 }}>Failed to load Knowledge page</div>
-);
 const KnowledgeManagement = React.lazy(() =>
   import("../Pages/KnowledgeBaseManagement.jsx").catch(() => ({
     default: () => <FailedToLoadKnowledgePage />,
   }))
 );
 
-// New: Analytics module (lazy)
-const FailedToLoadAnalyticsPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Analytics page</div>
-);
 const AnalyticsReporting = React.lazy(() =>
   import("../Pages/Auth/AnalyticsReporting.jsx").catch(() => ({
     default: () => <FailedToLoadAnalyticsPage />,
   }))
 );
 
-// add lazy import for settings
-const FailedToLoadSettingsPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Settings page</div>
-);
 const SettingsManagement = React.lazy(() =>
   import("../Pages/SettingsManagement.jsx").catch(() => ({
     default: () => <FailedToLoadSettingsPage />,
@@ -117,20 +136,6 @@ const LiveEventsPage = () => {
     </div>
   );
 };
-
-// Fallback components for lazy loading errors
-const FailedToLoadUsersPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Users page</div>
-);
-const FailedToLoadChassisDoctorPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Chassis Doctor page</div>
-);
-const FailedToLoadCoursesPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Courses page</div>
-);
-const FailedToLoadLiveEventsPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Live Events page</div>
-);
 
 // Error UI for router (shown for 404 / route errors)
 const ErrorPage = ({ error }) => {

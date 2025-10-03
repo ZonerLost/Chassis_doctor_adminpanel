@@ -132,3 +132,115 @@ export const mockCoursePricing = [
 export const mockCourseProgress = [
   // Progress-related mock data
 ];
+
+export const SAMPLE_COURSES = [
+  {
+    id: 1,
+    title: "Racing Fundamentals",
+    level: "Beginner",
+    instructor: "John Smith",
+    type: "Video Course",
+    duration: "4 hours",
+    students: 1250,
+    rating: 4.8,
+    price: 99.99,
+    status: "Published",
+    createdAt: "2024-01-15",
+    description:
+      "Learn the basics of professional racing including cornering, braking, and acceleration techniques.",
+    categories: ["Racing", "Fundamentals"],
+    thumbnail: "/course-thumbnails/racing-fundamentals.jpg",
+  },
+  {
+    id: 2,
+    title: "Advanced Chassis Setup",
+    level: "Advanced",
+    instructor: "Sarah Johnson",
+    type: "Workshop",
+    duration: "8 hours",
+    students: 480,
+    rating: 4.9,
+    price: 299.99,
+    status: "Published",
+    createdAt: "2024-02-10",
+    description:
+      "Master advanced chassis tuning for optimal performance on different track conditions.",
+    categories: ["Chassis", "Advanced"],
+    thumbnail: "/course-thumbnails/chassis-setup.jpg",
+  },
+  {
+    id: 3,
+    title: "Tire Management Strategies",
+    level: "Intermediate",
+    instructor: "Mike Wilson",
+    type: "Video Course",
+    duration: "3.5 hours",
+    students: 850,
+    rating: 4.7,
+    price: 149.99,
+    status: "Published",
+    createdAt: "2024-02-20",
+    description:
+      "Learn how to maximize tire performance and longevity during races.",
+    categories: ["Tires", "Strategy"],
+    thumbnail: "/course-thumbnails/tire-management.jpg",
+  },
+  {
+    id: 4,
+    title: "Aerodynamics for Speed",
+    level: "Advanced",
+    instructor: "Dr. Emma Davis",
+    type: "Masterclass",
+    duration: "6 hours",
+    students: 320,
+    rating: 4.9,
+    price: 399.99,
+    status: "Draft",
+    createdAt: "2024-03-01",
+    description:
+      "Understanding aerodynamic principles and their application in motorsports.",
+    categories: ["Aerodynamics", "Performance"],
+    thumbnail: "/course-thumbnails/aerodynamics.jpg",
+  },
+  {
+    id: 5,
+    title: "Mental Preparation for Racing",
+    level: "All Levels",
+    instructor: "Lisa Brown",
+    type: "Workshop",
+    duration: "4 hours",
+    students: 650,
+    rating: 4.6,
+    price: 199.99,
+    status: "Published",
+    createdAt: "2024-03-15",
+    description:
+      "Develop mental toughness and focus techniques for competitive racing.",
+    categories: ["Psychology", "Performance"],
+    thumbnail: "/course-thumbnails/mental-prep.jpg",
+  },
+];
+
+export const COURSE_LEVELS = [
+  "Beginner",
+  "Intermediate",
+  "Advanced",
+  "All Levels",
+];
+export const COURSE_TYPES = [
+  "Video Course",
+  "Workshop",
+  "Masterclass",
+  "Live Session",
+];
+export const COURSE_CATEGORIES = [
+  "Racing",
+  "Fundamentals",
+  "Chassis",
+  "Advanced",
+  "Tires",
+  "Strategy",
+  "Aerodynamics",
+  "Performance",
+  "Psychology",
+];

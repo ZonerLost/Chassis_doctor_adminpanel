@@ -10,19 +10,19 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className="min-h-screen transition-colors duration-300"
+      className="min-h-screen transition-colors duration-300 app-layout"
       style={{ backgroundColor: colors.bg }}
     >
       {/* Left Sidebar */}
       <LeftSidebar isOpen={leftSidebarOpen} setIsOpen={setLeftSidebarOpen} />
 
       {/* Main Content Area - with proper left margin for sidebar */}
-      <div className="lg:ml-72 transition-all duration-300">
-        {/* Header */}
+      <div className="ml-0 lg:ml-55 transition-all duration-300">
+        {/* Header (logout removed) */}
         <Header onMenuClick={() => setLeftSidebarOpen(!leftSidebarOpen)} />
 
         {/* Main Content */}
-        <main className="p-4 md:p-6">
+        <main className="pt-20 p-4 md:p-6">
           <div className="mx-auto w-full max-w-[1400px]">
             <Outlet />
           </div>

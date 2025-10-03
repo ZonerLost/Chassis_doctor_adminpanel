@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { listCourses, upsertCourse } from "../data/courses.service";
+import {
+  listCourses,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+} from "../data/courses.service";
+import { listRevisions } from "../data/knowledge.service";
 
 function shallowEqual(a, b) {
   if (a === b) return true;
@@ -66,7 +72,7 @@ export function useCourses(initial = {}) {
         if (!mounted.current || fetchId.current !== id) return; // stale -> ignore
 
         // Normalize response shape { data, total } expected from your service
-        const data = res?.data ?? res?.items ?? [];
+        const data = res?.data ?? res?.rows ?? res?.items ?? [];
         const totalCount =
           typeof res?.total === "number" ? res.total : data.length;
 
@@ -95,14 +101,31 @@ export function useCourses(initial = {}) {
   const setPageSize = (pageSize) => load({ page: 1, pageSize });
 
   const save = async (course) => {
-    await upsertCourse(course);
-    // refresh current view after save
-    await load();
+    const res = course.id
+      ? await updateCourse(course.id, course)
+      : await createCourse(course);
+    const saved = res?.data ?? res?.item ?? res ?? course;
+
+    // optimistic update of hook rows
+    setRows((prev) => {
+      const exists = prev.some((r) => String(r.id) === String(saved.id));
+      if (exists)
+        return prev.map((r) => (String(r.id) === String(saved.id) ? saved : r));
+      return [saved, ...prev];
+    });
+
+    // background reload if you have load()
+    load && load();
+
+    return saved;
   };
 
   return {
     state,
     rows,
+    // compatibility aliases for components expecting other key names
+    courses: rows,
+    items: rows,
     total,
     loading,
     error,
@@ -174,3 +197,109 @@ export const useCoursesV2 = () => {
     updateCourse,
   };
 };
+
+export const useCoursesV3 = () => {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({}); // Add filters state
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, success, error: apiError } = await listCourses(filters);
+      if (success) {
+        setRows(data);
+      } else {
+        setError(apiError);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    load();
+  }, [load]); // Only depend on load, which itself depends on filters
+
+  const save = async (courseData) => {
+    try {
+      setLoading(true);
+      let result;
+
+      if (courseData.id) {
+        result = await updateCourse(courseData.id, courseData);
+      } else {
+        result = await createCourse(courseData);
+      }
+
+      if (result.success) {
+        await load(); // Reload the list
+        return result;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const remove = async (id) => {
+    try {
+      setLoading(true);
+      const result = await deleteCourse(id);
+
+      if (result.success) {
+        await load(); // Reload the list
+        return result;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    rows,
+    loading,
+    error,
+    reload: load,
+    save,
+    remove,
+    filters,
+    setFilters, // Expose filters and setter
+  };
+};
+
+export function useRevisions({ articleId = null } = {}) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await listRevisions({ articleId });
+      // normalize response (support { data }, { rows }, or direct array)
+      const data = res?.data ?? res?.rows ?? res ?? [];
+      setRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("useRevisions load error:", err);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [articleId]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  return { rows, loading, reload: load };
+}

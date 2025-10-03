@@ -1,36 +1,38 @@
 import React from "react";
-import { COLORS } from "../components/ui/shared/theme.js";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 export default function DateRangeBar({ from, to, onFrom, onTo, extra }) {
+  const { colors } = useTheme();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
       <label className="block text-xs">
-        <span className="block mb-1" style={{ color: COLORS.text2 }}>
+        <span className="block mb-1" style={{ color: colors.text2 }}>
           From
         </span>
         <input
           type="date"
           className="w-full rounded-xl border px-3 py-2"
           style={{
-            borderColor: COLORS.ring,
-            backgroundColor: COLORS.hover,
-            color: COLORS.text,
+            borderColor: colors.ring,
+            backgroundColor: colors.hover,
+            color: colors.text,
           }}
           value={from}
           onChange={(e) => onFrom(e.target.value)}
         />
       </label>
       <label className="block text-xs">
-        <span className="block mb-1" style={{ color: COLORS.text2 }}>
+        <span className="block mb-1" style={{ color: colors.text2 }}>
           To
         </span>
         <input
           type="date"
           className="w-full rounded-xl border px-3 py-2"
           style={{
-            borderColor: COLORS.ring,
-            backgroundColor: COLORS.hover,
-            color: COLORS.text,
+            borderColor: colors.ring,
+            backgroundColor: colors.hover,
+            color: colors.text,
           }}
           value={to}
           onChange={(e) => onTo(e.target.value)}

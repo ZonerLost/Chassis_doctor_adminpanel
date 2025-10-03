@@ -99,7 +99,7 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <header
-      className="sticky top-0 left-0 right-0 h-20 w-full flex items-center gap-4 px-4 md:px-6 shadow-lg border-b backdrop-blur-sm overflow-visible transition-colors duration-300"
+      className="sticky top-0 left-0 right-15 h-20 w-full flex items-center gap-4 px-4 md:px-6 shadow-lg border-b backdrop-blur-sm overflow-visible transition-colors duration-300"
       style={{
         backgroundColor: `${colors.card}CC`,
         borderColor: colors.ring,
@@ -109,15 +109,6 @@ const Header = ({ onMenuClick }) => {
         zIndex: 100,
       }}
     >
-      {/* Animated background gradient */}
-      <div
-        className="absolute inset-0 opacity-10 pointer-events-none transition-opacity duration-300"
-        style={{
-          background: `linear-gradient(135deg, ${colors.accent}40, ${colors.accent}10, transparent)`,
-          animation: "pulse 4s ease-in-out infinite alternate",
-        }}
-      />
-
       {/* Mobile menu button */}
       <button
         onClick={onMenuClick}
@@ -133,48 +124,6 @@ const Header = ({ onMenuClick }) => {
           className="transition-transform group-hover:rotate-180"
         />
       </button>
-
-      {/* Brand / Logo */}
-      <div className="flex items-center gap-3 font-bold text-xl relative">
-        <div className="relative">
-          <img
-            src="/logo.png"
-            alt="MotorSport University Logo"
-            className="h-12 w-12 object-contain rounded-lg shadow-md transition-transform hover:scale-110"
-            style={{
-              filter: isDark
-                ? "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
-                : "drop-shadow(0 4px 8px rgba(0,0,0,0.1))",
-            }}
-            onError={(e) => {
-              if (e.target.src.includes("/logo.png")) {
-                e.target.src = "/assets/logo.png";
-              } else {
-                e.target.style.display = "none";
-                if (e.target.nextElementSibling) {
-                  e.target.nextElementSibling.style.display = "block";
-                }
-              }
-            }}
-          />
-          <div
-            className="h-12 w-12 rounded-lg shadow-md flex items-center justify-center text-xl font-bold"
-            style={{
-              backgroundColor: colors.accent,
-              color: colors.bg,
-              display: "none",
-            }}
-          >
-            M
-          </div>
-        </div>
-        <span
-          className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent text-lg"
-          style={{ fontWeight: "800" }}
-        >
-          MotorSport
-        </span>
-      </div>
 
       {/* Spacer */}
       <div className="flex-1" />

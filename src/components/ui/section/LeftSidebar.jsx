@@ -50,7 +50,7 @@ const menuItems = [
     icon: MdMenuBook,
     label: "Knowledge",
     path: "/knowledge",
-    description: "Articles, Categories & Revisions",
+    description: "Articles & Categories",
     color: "#D4AF37",
   },
   {
@@ -73,7 +73,7 @@ export default function LeftSidebar({
   isOpen: propIsOpen,
   setIsOpen: setPropIsOpen,
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const loc = useLocation();
   const navigate = useNavigate();
   // Support controlled mode (DashboardLayout passes isOpen/setIsOpen) or fall back to internal state
@@ -129,7 +129,7 @@ export default function LeftSidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full w-72 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed left-0 top-0 h-full w-55 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{
@@ -138,6 +138,50 @@ export default function LeftSidebar({
         }}
       >
         <div className="flex flex-col h-full">
+          {/* Brand / Logo Section */}
+          <div className="p-4 border-b" style={{ borderColor: colors.ring }}>
+            <div className="flex items-center gap-3 font-bold text-xl relative">
+              <div className="relative">
+                <img
+                  src="/logo.png"
+                  alt="MotorSport University Logo"
+                  className="h-12 w-12 object-contain rounded-lg shadow-md transition-transform hover:scale-110"
+                  style={{
+                    filter: isDark
+                      ? "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
+                      : "drop-shadow(0 4px 8px rgba(0,0,0,0.1))",
+                  }}
+                  onError={(e) => {
+                    if (e.target.src.includes("/logo.png")) {
+                      e.target.src = "/assets/logo.png";
+                    } else {
+                      e.target.style.display = "none";
+                      if (e.target.nextElementSibling) {
+                        e.target.nextElementSibling.style.display = "block";
+                      }
+                    }
+                  }}
+                />
+                <div
+                  className="h-12 w-12 rounded-lg shadow-md flex items-center justify-center text-xl font-bold"
+                  style={{
+                    backgroundColor: colors.accent,
+                    color: colors.bg,
+                    display: "none",
+                  }}
+                >
+                  M
+                </div>
+              </div>
+              <span
+                className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent text-lg"
+                style={{ fontWeight: "800" }}
+              >
+                MotorSport
+              </span>
+            </div>
+          </div>
+
           {/* Close button on mobile - moved to top right corner */}
           <div className="p-4 lg:hidden flex justify-end">
             <button

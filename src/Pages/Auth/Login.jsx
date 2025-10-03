@@ -1,339 +1,187 @@
-// ...existing code...
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { MdMail, MdLock, MdVisibility, MdVisibilityOff } from "react-icons/md";
-import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaFacebook } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../contexts/ThemeContext";
+import * as userService from "../../data/users.service";
 
 const COLORS = {
   onyx: "#0B0B0F",
-  bg: "#12131A",
+  bg: "#0B0B0F",
   card: "#161821",
   text: "#E6E8F0",
   text2: "#A3A7B7",
-  ring: "rgba(110,86,207,0.25)",
-  gold: "#D4AF37",
-  purple: "#6E56CF",
+  ring: "rgba(172,142,47,0.25)",
+  gold: "rgb(172, 142, 47)",
+  purple: "rgb(172, 142, 47)",
 };
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  useTheme();
+
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-  const [remember, setRemember] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const remember = true;
+  // const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: "", pwd: "" });
+  // Removed unused focusedField state
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
 
-  const validate = () => {
-    const next = { email: "", pwd: "" };
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-    if (!emailOk) next.email = "Enter a valid email address.";
-    if (pwd.length < 6) next.pwd = "Password must be at least 6 characters.";
-    setErrors(next);
-    return !next.email && !next.pwd;
-  };
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePos({ x, y });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setLoading(true);
-    setTimeout(() => {
-      const token = "demo-token-" + Date.now();
-      if (remember) localStorage.setItem("auth_token", token);
-      else sessionStorage.setItem("auth_token", token);
-      setLoading(false);
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
+    setErrors({ email: "", pwd: "", form: "" });
+    if (!email || !pwd) {
+      setErrors({
+        email: !email ? "Email is required." : "",
+        pwd: !pwd ? "Password is required." : "",
+      });
+      return;
+    }
+    // setLoading(true);
+    try {
+      let res;
+      if (typeof userService.login === "function") {
+        try {
+          res = await userService.login({ email, password: pwd });
+        } catch {
+          res = await userService.login(email, pwd);
+        }
+      } else if (typeof userService.authenticate === "function") {
+        res = await userService.authenticate({ email, password: pwd });
+      } else {
+        const r = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: pwd }),
+        });
+        if (!r.ok) throw new Error("Invalid credentials");
+        res = await r.json();
+      }
+
+      const token =
+        (res && (res.token || res.accessToken)) ??
+        (typeof res === "string" ? res : null);
+      const user = res && (res.user || res.data || null);
+
+      if (!token && !user) {
+        if (res && (res.id || res.email)) {
+          localStorage.setItem("user", JSON.stringify(res));
+        } else {
+          throw new Error("Login failed");
+        }
+      }
+
+      if (token) {
+        const storageKey = "auth_token";
+        if (remember) {
+          localStorage.setItem(storageKey, token);
+        } else {
+          sessionStorage.setItem(storageKey, token);
+        }
+      }
+
+      if (user) localStorage.setItem("user", JSON.stringify(user));
       navigate("/", { replace: true });
-    }, 700);
+    } catch (err) {
+      console.error("Login error:", err);
+      setErrors({
+        email: "",
+        pwd: "",
+        form: err?.message ?? "Login failed",
+      });
+    } finally {
+      // setLoading(false);
+    }
   };
+
+  const stats = [
+    { icon: "⚡", label: "Fast Access", value: "< 2s" },
+    { icon: "🛡️", label: "Secure", value: "256-bit" },
+    { icon: "📈", label: "Uptime", value: "99.9%" },
+  ];
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
+    <form
+      onSubmit={handleSubmit}
+      className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden"
       style={{
-        background:
-          "radial-gradient(900px 480px at 10% 10%, rgba(110,86,207,0.08), transparent 40%), radial-gradient(700px 360px at 90% 90%, rgba(212,175,55,0.06), transparent 40%), #0B0B0F",
+        background: `radial-gradient(900px 480px at ${mousePos.x}% ${mousePos.y}%, rgba(172,142,47,0.15), transparent 40%), radial-gradient(700px 360px at 90% 90%, rgba(172,142,47,0.08), transparent 40%), rgb(11, 11, 15)`,
+        transition: "background 0.3s ease",
       }}
     >
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* Left: Branding */}
-        <div className="hidden lg:flex flex-col justify-center gap-6 pl-6">
-          <div className="flex items-center gap-3">
-            <img src="/assets/logo.png" alt="Logo" className="h-14 w-14" />
-            <div>
-              <div
-                className="text-xl font-semibold"
-                style={{ color: COLORS.text }}
-              >
-                Motorsport University
-              </div>
-              <div className="text-sm" style={{ color: COLORS.text2 }}>
-                Admin Dashboard
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <h2 className="text-3xl font-bold" style={{ color: COLORS.text }}>
-              Welcome back
-            </h2>
-            <p className="mt-2 max-w-sm" style={{ color: COLORS.text2 }}>
-              Log in to manage users, content, diagnostics and analytics. Secure
-              admin access with a refined dark theme.
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-3">
-            <div
-              className="rounded-xl p-4"
-              style={{
-                backgroundColor: COLORS.card,
-                border: `1px solid ${COLORS.ring}`,
-                color: COLORS.text,
-              }}
-            >
-              <div className="text-xs" style={{ color: COLORS.text2 }}>
-                Tip
-              </div>
-              <div className="mt-1 text-sm">
-                Use the demo credentials{" "}
-                <span className="font-medium">demo@demo.com</span> /{" "}
-                <span className="font-medium">password</span>
-              </div>
-            </div>
-
-            <div
-              className="rounded-xl p-4"
-              style={{
-                backgroundColor: COLORS.card,
-                border: `1px solid ${COLORS.ring}`,
-                color: COLORS.text,
-              }}
-            >
-              <div className="text-xs" style={{ color: COLORS.text2 }}>
-                Security
-              </div>
-              <div className="mt-1 text-sm">
-                Two-factor authentication recommended for admin accounts.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Form */}
-        <div>
+      {/* ... */}
+      <div className="grid grid-cols-3 gap-4 mt-4">
+        {stats.map((stat, idx) => (
           <div
-            className="mx-auto w-full max-w-md rounded-2xl p-6 shadow-lg"
+            key={idx}
+            className="rounded-xl p-4 backdrop-blur-sm transform hover:scale-105 transition-all duration-300 cursor-pointer"
             style={{
-              backgroundColor: COLORS.card,
+              backgroundColor: "rgba(22, 24, 33, 0.6)",
               border: `1px solid ${COLORS.ring}`,
-              color: COLORS.text,
+              animationDelay: `${idx * 0.1}s`,
             }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <img src="/assets/logo.png" alt="Logo" className="h-10 w-10" />
-                <div>
-                  <div
-                    className="text-lg font-semibold"
-                    style={{ color: COLORS.text }}
-                  >
-                    Admin Login
-                  </div>
-                  <div className="text-xs" style={{ color: COLORS.text2 }}>
-                    Manage the Motorsport University platform
-                  </div>
-                </div>
-              </div>
-              <div className="text-sm" style={{ color: COLORS.text2 }}>
-                {new Date().toLocaleDateString()}
-              </div>
+            <span style={{ fontSize: 24 }}>{stat.icon}</span>
+            <div className="mt-2 text-xs" style={{ color: COLORS.text2 }}>
+              {stat.label}
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-xs" style={{ color: COLORS.text2 }}>
-                  Email
-                </label>
-                <div className="relative mt-1">
-                  <MdMail
-                    className="absolute left-3 top-1/2 -translate-y-1/2"
-                    style={{ color: COLORS.text2 }}
-                  />
-                  <input
-                    autoFocus
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="w-full h-11 rounded-xl pl-10 pr-3 text-sm outline-none"
-                    style={{
-                      backgroundColor: "#12131A",
-                      color: COLORS.text,
-                      border: `1px solid ${
-                        errors.email ? "#EF4444" : COLORS.ring
-                      }`,
-                    }}
-                  />
-                </div>
-                {errors.email ? (
-                  <div className="mt-1 text-xs" style={{ color: "#EF4444" }}>
-                    {errors.email}
-                  </div>
-                ) : null}
-              </div>
-
-              <div>
-                <label className="text-xs" style={{ color: COLORS.text2 }}>
-                  Password
-                </label>
-                <div className="relative mt-1">
-                  <MdLock
-                    className="absolute left-3 top-1/2 -translate-y-1/2"
-                    style={{ color: COLORS.text2 }}
-                  />
-                  <input
-                    type={showPwd ? "text" : "password"}
-                    value={pwd}
-                    onChange={(e) => setPwd(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full h-11 rounded-xl pl-10 pr-10 text-sm outline-none"
-                    style={{
-                      backgroundColor: "#12131A",
-                      color: COLORS.text,
-                      border: `1px solid ${
-                        errors.pwd ? "#EF4444" : COLORS.ring
-                      }`,
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPwd((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md"
-                    aria-label={showPwd ? "Hide password" : "Show password"}
-                    style={{ color: COLORS.text2 }}
-                  >
-                    {showPwd ? (
-                      <MdVisibilityOff size={18} />
-                    ) : (
-                      <MdVisibility size={18} />
-                    )}
-                  </button>
-                </div>
-                {errors.pwd ? (
-                  <div className="mt-1 text-xs" style={{ color: "#EF4444" }}>
-                    {errors.pwd}
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label
-                  className="inline-flex items-center gap-2 text-sm"
-                  style={{ color: COLORS.text2 }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="accent-[#6E56CF]"
-                  />
-                  Remember me
-                </label>
-                <Link
-                  to="#"
-                  className="text-sm underline"
-                  style={{ color: COLORS.text }}
-                >
-                  Forgot?
-                </Link>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-11 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
-                style={{
-                  background: `linear-gradient(90deg, ${COLORS.gold}, ${COLORS.purple})`,
-                  color: "#0B0B0F",
-                }}
-              >
-                {loading ? "Signing in…" : "Sign in"}
-              </button>
-            </form>
-
-            <div className="my-4 flex items-center gap-3">
-              <div
-                className="h-px flex-1"
-                style={{ backgroundColor: COLORS.ring }}
-              />
-              <div className="text-xs" style={{ color: COLORS.text2 }}>
-                or continue with
-              </div>
-              <div
-                className="h-px flex-1"
-                style={{ backgroundColor: COLORS.ring }}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                onClick={() => alert("Google sign-in (placeholder)")}
-                className="h-11 rounded-xl flex items-center justify-center gap-2 border"
-                style={{
-                  backgroundColor: "#12131A",
-                  borderColor: COLORS.ring,
-                  color: COLORS.text,
-                }}
-              >
-                <FcGoogle />
-                <span className="text-sm">Google</span>
-              </button>
-              <button
-                onClick={() => alert("Facebook sign-in (placeholder)")}
-                className="h-11 rounded-xl flex items-center justify-center gap-2 border"
-                style={{
-                  backgroundColor: "#12131A",
-                  borderColor: COLORS.ring,
-                  color: COLORS.text,
-                }}
-              >
-                <FaFacebook style={{ color: "#3b5998" }} />
-                <span className="text-sm">Facebook</span>
-              </button>
-              <button
-                onClick={() => alert("Apple sign-in (placeholder)")}
-                className="h-11 rounded-xl flex items-center justify-center gap-2 border"
-                style={{
-                  backgroundColor: "#12131A",
-                  borderColor: COLORS.ring,
-                  color: COLORS.text,
-                }}
-              >
-                <FaApple />
-                <span className="text-sm">Apple</span>
-              </button>
-            </div>
-
-            <div
-              className="mt-4 text-center text-sm"
-              style={{ color: COLORS.text2 }}
-            >
-              Don't have access?{" "}
-              <button
-                type="button"
-                onClick={() => alert("Request access flow coming soon")}
-                className="underline"
-                style={{ color: COLORS.text }}
-              >
-                Request access
-              </button>
+            <div className="text-xl font-bold" style={{ color: COLORS.text }}>
+              {stat.value}
             </div>
           </div>
-        </div>
+        ))}
       </div>
-    </div>
+      {/* ... */}
+      <div className="relative mt-2 group">
+        <span
+          className="absolute left-4 top-1/2 -translate-y-1/2"
+          style={{ color: COLORS.text2 }}
+        >
+          📧
+        </span>
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          // Removed onFocus and onBlur handlers for focusedField
+          placeholder="you@company.com"
+          className="w-full h-12 rounded-xl pl-12 pr-4 text-sm outline-none"
+          style={{
+            backgroundColor: "#0B0B0F",
+            color: COLORS.text,
+            border: `2px solid ${errors.email ? "#EF4444" : COLORS.ring}`,
+          }}
+        />
+      </div>
+
+      <div className="relative">
+        <input
+          type={showPwd ? "text" : "password"}
+          value={pwd}
+          onChange={(e) => setPwd(e.target.value)}
+          className="w-full rounded-lg px-3 py-2 text-sm"
+          placeholder="Password"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPwd((s) => !s)}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1"
+          aria-label={showPwd ? "Hide password" : "Show password"}
+        >
+          <span>{showPwd ? "🙈" : "👁️"}</span>
+        </button>
+      </div>
+    </form>
   );
 };
 
 export default LoginPage;
-// ...existing code...
