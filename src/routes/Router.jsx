@@ -1,17 +1,8 @@
-// src/router/index.jsx
 import React, { Suspense } from "react";
-import {
-  createBrowserRouter,
-  Link,
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import MainDashboard from "../Pages/Auth/MainDashboard.jsx";
 import { useTheme } from "../contexts/ThemeContext";
-import Login from "../Pages/Auth/Login";
 
 // Error boundary component
 class ErrorBoundary extends React.Component {
@@ -49,93 +40,68 @@ class ErrorBoundary extends React.Component {
 
 // Loading component
 const LoadingSpinner = () => {
+  const { colors } = useTheme();
   return (
-    <div
-      className="flex items-center justify-center p-8"
-      style={{ color: "inherit" }}
-    >
-      <div
-        className="animate-spin rounded-full h-8 w-8 border-b-2"
-        style={{ borderColor: "#D4AF37" }}
-      />
+    <div className="flex items-center justify-center p-8" style={{ color: "inherit" }}>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: colors.accent }} />
       <span className="ml-3">Loading...</span>
     </div>
   );
 };
 
-// Fallback components for lazy loading errors (move these BEFORE lazy imports)
-const FailedToLoadUsersPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Users page</div>
-);
-const FailedToLoadChassisDoctorPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Chassis Doctor page</div>
-);
-const FailedToLoadCoursesPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Courses page</div>
-);
-const FailedToLoadKnowledgePage = () => (
-  <div style={{ padding: 12 }}>Failed to load Knowledge page</div>
-);
-const FailedToLoadAnalyticsPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Analytics page</div>
-);
-const FailedToLoadSettingsPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Settings page</div>
-);
-const FailedToLoadLiveEventsPage = () => (
-  <div style={{ padding: 12 }}>Failed to load Live Events page</div>
+// Generic fallback for lazy loading errors
+const FailedToLoad = ({ page }) => (
+  <div style={{ padding: 12 }}>Failed to load {page} page</div>
 );
 
-// Lazy-load components (now safe to reference the above fallbacks)
-const UsersManagement = React.lazy(() =>
-  import("../Pages/Auth/UserManagement.jsx").catch(() => ({
-    default: () => <FailedToLoadUsersPage />,
-  }))
-);
 
-const ChassisDoctorManagement = React.lazy(() =>
-  import("../Pages/Auth/ChassisDoctorManagement.jsx").catch(() => ({
-    default: () => <FailedToLoadChassisDoctorPage />,
-  }))
-);
-
-const CoursesManagement = React.lazy(() =>
-  import("../Pages/CoursesManagement.jsx").catch(() => ({
-    default: () => <FailedToLoadCoursesPage />,
-  }))
-);
-
-const KnowledgeManagement = React.lazy(() =>
-  import("../Pages/KnowledgeBaseManagement.jsx").catch(() => ({
-    default: () => <FailedToLoadKnowledgePage />,
-  }))
-);
-
-const AnalyticsReporting = React.lazy(() =>
-  import("../Pages/Auth/AnalyticsReporting.jsx").catch(() => ({
-    default: () => <FailedToLoadAnalyticsPage />,
-  }))
-);
-
-const SettingsManagement = React.lazy(() =>
-  import("../Pages/SettingsManagement.jsx").catch(() => ({
-    default: () => <FailedToLoadSettingsPage />,
-  }))
-);
-
-// removed broken lazy import for LiveEventsPage (file doesn't exist)
-// define a local LiveEventsPage component instead
-const LiveEventsPage = () => {
-  const { colors } = useTheme();
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
-        Live & Events
-      </h1>
-      <p style={{ color: colors.text2 }}>Manage live events and schedules.</p>
-    </div>
+// DRY helpers for lazy pages and wrappers
+const lazyPage = (importer, page) =>
+  React.lazy(() =>
+    importer().catch(() => ({
+      default: () => <FailedToLoad page={page} />,
+    }))
   );
-};
+
+const renderLazy = (LazyComp) => (
+  <ErrorBoundary>
+    <Suspense fallback={<LoadingSpinner />}>
+      <LazyComp />
+    </Suspense>
+  </ErrorBoundary>
+);
+
+// Register lazy pages
+const UsersManagement = lazyPage(
+  () => import("../Pages/Auth/UserManagement.jsx"),
+  "Users"
+);
+const ChassisDoctorManagement = lazyPage(
+  () => import("../Pages/Auth/ChassisDoctorManagement.jsx"),
+  "Chassis Doctor"
+);
+const CoursesManagement = lazyPage(
+  () => import("../Pages/CoursesManagement.jsx"),
+  "Courses"
+);
+const KnowledgeManagement = lazyPage(
+  () => import("../Pages/KnowledgeBaseManagement.jsx"),
+  "Knowledge"
+);
+const AnalyticsReporting = lazyPage(
+  () => import("../Pages/Auth/AnalyticsReporting.jsx"),
+  "Analytics"
+);
+const SettingsManagement = lazyPage(
+  () => import("../Pages/SettingsManagement.jsx"),
+  "Settings"
+);
+
+// Public pages
+const LoginPage = lazyPage(
+  () => import("../Pages/Auth/Login.jsx"),
+  "Login"
+);
 
 // Error UI for router (shown for 404 / route errors)
 const ErrorPage = ({ error }) => {
@@ -167,183 +133,24 @@ const ErrorPage = ({ error }) => {
   );
 };
 
-// Dashboard component with theme context
-const DashboardPageWithTheme = () => {
-  const { colors } = useTheme();
-
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4" style={{ color: colors.text }}>
-        Dashboard
-      </h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div
-          className="p-4 rounded-xl border transition-colors duration-300"
-          style={{
-            backgroundColor: colors.bg2,
-            borderColor: colors.ring,
-          }}
-        >
-          <h3 className="font-semibold mb-2" style={{ color: colors.text }}>
-            Total Users
-          </h3>
-          <p className="text-2xl font-bold" style={{ color: colors.accent }}>
-            1,247
-          </p>
-        </div>
-        <div
-          className="p-4 rounded-xl border transition-colors duration-300"
-          style={{
-            backgroundColor: colors.bg2,
-            borderColor: colors.ring,
-          }}
-        >
-          <h3 className="font-semibold mb-2" style={{ color: colors.text }}>
-            Active Sessions
-          </h3>
-          <p className="text-2xl font-bold" style={{ color: colors.accent }}>
-            342
-          </p>
-        </div>
-        <div
-          className="p-4 rounded-xl border transition-colors duration-300"
-          style={{
-            backgroundColor: colors.bg2,
-            borderColor: colors.ring,
-          }}
-        >
-          <h3 className="font-semibold mb-2" style={{ color: colors.text }}>
-            Chassis Diagnostics
-          </h3>
-          <p className="text-2xl font-bold" style={{ color: colors.accent }}>
-            89
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Other page components with proper theming
-const DealsPage = () => {
-  const { colors } = useTheme();
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
-        Deals & Partners
-      </h1>
-      <p style={{ color: colors.text2 }}>
-        Manage promotional deals and partnerships.
-      </p>
-    </div>
-  );
-};
-
-const MessagingPage = () => {
-  const { colors } = useTheme();
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
-        Messaging & Community
-      </h1>
-      <p style={{ color: colors.text2 }}>
-        Manage communications and community features.
-      </p>
-    </div>
-  );
-};
-
-const SupportPage = () => {
-  const { colors } = useTheme();
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
-        Support / Media / Settings
-      </h1>
-      <p style={{ color: colors.text2 }}>
-        System configuration and support tools.
-      </p>
-    </div>
-  );
-};
-
-// add lazy login page
-const LoginPage = React.lazy(() =>
-  import("../Pages/Auth/Login.jsx").catch(() => ({
-    default: () => <div style={{ padding: 12 }}>Failed to load Login page</div>,
-  }))
-);
 
 const Router = createBrowserRouter([
+  // Public route: Login
+  { path: "/login", element: renderLazy(LoginPage) },
   {
     path: "/",
     element: <DashboardLayout />,
     errorElement: <ErrorPage />,
     children: [
       { index: true, element: <MainDashboard /> },
-      {
-        path: "users-memberships",
-        element: (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <UsersManagement />
-            </Suspense>
-          </ErrorBoundary>
-        ),
-      },
-      {
-        path: "chassis-doctor",
-        element: (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <ChassisDoctorManagement />
-            </Suspense>
-          </ErrorBoundary>
-        ),
-      },
-      {
-        path: "courses",
-        element: (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <CoursesManagement />
-            </Suspense>
-          </ErrorBoundary>
-        ),
-      },
-      {
-        path: "knowledge",
-        element: (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <KnowledgeManagement />
-            </Suspense>
-          </ErrorBoundary>
-        ),
-      },
-      {
-        path: "analytics",
-        element: (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <AnalyticsReporting />
-            </Suspense>
-          </ErrorBoundary>
-        ),
-      },
-      {
-        path: "settings",
-        element: (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <SettingsManagement />
-            </Suspense>
-          </ErrorBoundary>
-        ),
-      },
-      // profile/system routes removed
-      // brokers route removed
-      // removed messaging & support-settings routes per request
+      ...[
+        ["users-memberships", UsersManagement],
+        ["chassis-doctor", ChassisDoctorManagement],
+        ["courses", CoursesManagement],
+        ["knowledge", KnowledgeManagement],
+        ["analytics", AnalyticsReporting],
+        ["settings", SettingsManagement],
+      ].map(([path, Comp]) => ({ path, element: renderLazy(Comp) })),
     ],
   },
 ]);

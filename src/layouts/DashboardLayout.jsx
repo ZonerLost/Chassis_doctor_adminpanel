@@ -17,12 +17,12 @@ const DashboardLayout = () => {
       <LeftSidebar isOpen={leftSidebarOpen} setIsOpen={setLeftSidebarOpen} />
 
       {/* Main Content Area - with proper left margin for sidebar */}
-      <div className="ml-0 lg:ml-55 transition-all duration-300">
+      <div className="ml-0 lg:ml-64 transition-all duration-300">
         {/* Header (logout removed) */}
         <Header onMenuClick={() => setLeftSidebarOpen(!leftSidebarOpen)} />
 
         {/* Main Content */}
-        <main className="pt-20 p-4 md:p-6">
+        <main className="p-4 md:p-6">
           <div className="mx-auto w-full max-w-[1400px]">
             <Outlet />
           </div>

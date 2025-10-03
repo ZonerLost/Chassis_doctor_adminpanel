@@ -76,6 +76,8 @@ export default function LeftSidebar({
   const { colors, isDark } = useTheme();
   const loc = useLocation();
   const navigate = useNavigate();
+  const [logoLoaded, setLogoLoaded] = React.useState(false);
+  const [logoError, setLogoError] = React.useState(false);
   // Support controlled mode (DashboardLayout passes isOpen/setIsOpen) or fall back to internal state
   const [localOpen, setLocalOpen] = React.useState(false);
   const isControlled =
@@ -129,12 +131,13 @@ export default function LeftSidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full w-55 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed left-0 top-0 h-full w-64 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{
           backgroundColor: colors.card,
           borderRight: `1px solid ${colors.ring}`,
+          zIndex: 120,
         }}
       >
         <div className="flex flex-col h-full">
@@ -142,36 +145,41 @@ export default function LeftSidebar({
           <div className="p-4 border-b" style={{ borderColor: colors.ring }}>
             <div className="flex items-center gap-3 font-bold text-xl relative">
               <div className="relative">
-                <img
-                  src="/logo.png"
-                  alt="MotorSport University Logo"
-                  className="h-12 w-12 object-contain rounded-lg shadow-md transition-transform hover:scale-110"
-                  style={{
-                    filter: isDark
-                      ? "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
-                      : "drop-shadow(0 4px 8px rgba(0,0,0,0.1))",
-                  }}
-                  onError={(e) => {
-                    if (e.target.src.includes("/logo.png")) {
-                      e.target.src = "/assets/logo.png";
-                    } else {
-                      e.target.style.display = "none";
-                      if (e.target.nextElementSibling) {
-                        e.target.nextElementSibling.style.display = "block";
-                      }
-                    }
-                  }}
-                />
-                <div
-                  className="h-12 w-12 rounded-lg shadow-md flex items-center justify-center text-xl font-bold"
-                  style={{
-                    backgroundColor: colors.accent,
-                    color: colors.bg,
-                    display: "none",
-                  }}
-                >
-                  M
-                </div>
+                {!logoLoaded && !logoError && (
+                  <div
+                    className="h-12 w-12 rounded-lg shadow-md"
+                    style={{ backgroundColor: colors.hover }}
+                  />
+                )}
+                {!logoError && (
+                  <img
+                    src="/assets/Logo.png"
+                    alt="MotorSport University Logo"
+                    className="h-12 w-12 object-contain rounded-lg shadow-md transition-transform hover:scale-110"
+                    style={{
+                      filter: isDark
+                        ? "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
+                        : "drop-shadow(0 4px 8px rgba(0,0,0,0.1))",
+                      visibility: logoLoaded ? "visible" : "hidden",
+                      position: !logoLoaded ? "absolute" : "static",
+                      top: 0,
+                      left: 0,
+                    }}
+                    onLoad={() => setLogoLoaded(true)}
+                    onError={() => setLogoError(true)}
+                  />
+                )}
+                {logoError && (
+                  <div
+                    className="h-12 w-12 rounded-lg shadow-md flex items-center justify-center text-xl font-bold"
+                    style={{
+                      backgroundColor: colors.accent,
+                      color: colors.bg,
+                    }}
+                  >
+                    M
+                  </div>
+                )}
               </div>
               <span
                 className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent text-lg"
@@ -182,17 +190,7 @@ export default function LeftSidebar({
             </div>
           </div>
 
-          {/* Close button on mobile - moved to top right corner */}
-          <div className="p-4 lg:hidden flex justify-end">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 rounded-md"
-              style={{ color: colors.text2 }}
-              aria-label="Close sidebar"
-            >
-              <MdClose size={18} />
-            </button>
-          </div>
+     
 
           {/* Navigation Menu */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-2">

@@ -220,7 +220,7 @@ function ProfileSettings({
   const [form, setForm] = useState({
     name: value.name || "",
     email: value.email || "",
-    avatar: value.avatar || "/assets/logo.png",
+    avatar: value.avatar || "/assets/Logo.png",
     timezone:
       value.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     locale: value.locale || navigator.language || "en-US",
@@ -262,7 +262,7 @@ function ProfileSettings({
       setForm({
         name: "",
         email: "",
-        avatar: "/assets/logo.png",
+        avatar: "/assets/Logo.png",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         locale: navigator.language || "en-US",
         changePwd: false,

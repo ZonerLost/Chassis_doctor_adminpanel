@@ -31,6 +31,9 @@ export const ThemeProvider = ({ children }) => {
     // Toggle body class for additional styling if needed
     document.body.classList.toggle("dark-theme", darkMode);
     document.body.classList.toggle("light-theme", !darkMode);
+    // Also toggle Tailwind's dark mode class at root for consistency
+    const root = document.documentElement;
+    root.classList.toggle("dark", darkMode);
   };
 
   const toggleTheme = () => {

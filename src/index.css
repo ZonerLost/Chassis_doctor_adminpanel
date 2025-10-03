@@ -10,9 +10,27 @@
   --font-heading: 'Poppins', var(--font-sans);
 }
 
+/* Fallback theme variables before ThemeProvider applies them */
+:root {
+  --color-bg: #0B0B0F;
+  --color-bg2: #12131A;
+  --color-card: #161821;
+  --color-text: #E6E8F0;
+  --color-text2: #A3A7B7;
+  --color-gold: #D4AF37;
+  --color-purple: #6E56CF;
+  --color-ring: rgba(110,86,207,0.25);
+  --color-accent: #D4AF37;
+  --color-hover: rgba(110,86,207,0.1);
+  --color-ok: #22C55E;
+  --color-warn: #F59E0B;
+  --color-danger: #EF4444;
+}
+
 /* Apply base */
 body {
-  @apply bg-gray-50;
+  background-color: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

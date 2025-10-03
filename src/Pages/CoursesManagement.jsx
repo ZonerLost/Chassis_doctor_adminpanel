@@ -80,23 +80,24 @@ export default function CoursesManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center"
             style={{ backgroundColor: colors.accent + "20" }}
           >
-            <MdLibraryBooks size={24} style={{ color: colors.accent }} />
+            <MdLibraryBooks size={22} className="sm:hidden" style={{ color: colors.accent }} />
+            <MdLibraryBooks size={24} className="hidden sm:block" style={{ color: colors.accent }} />
           </div>
           <div>
             <h1
-              className="text-2xl font-semibold"
+              className="text-xl sm:text-2xl font-semibold"
               style={{ color: colors.text }}
             >
               Courses Management
             </h1>
-            <div className="text-sm mt-1" style={{ color: colors.text2 }}>
+            <div className="text-xs sm:text-sm mt-1" style={{ color: colors.text2 }}>
               Manage course catalog and content
             </div>
           </div>
@@ -104,7 +105,7 @@ export default function CoursesManagement() {
 
         <button
           onClick={handleAddCourse}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
           style={{
             backgroundColor: colors.accent,
             color: "#000",
@@ -115,12 +116,15 @@ export default function CoursesManagement() {
         </button>
       </div>
 
-      <div style={{ backgroundColor: colors.bg2 }}>
-        <CourseTable
-          courses={localCourses}
-          loading={loading}
-          onEdit={handleEditCourse}
-        />
+      {/* Horizontal scroll on small screens so wide tables remain usable */}
+      <div className="-mx-2 sm:mx-0 overflow-x-auto rounded-xl" style={{ backgroundColor: colors.bg2 }}>
+        <div className="min-w-[680px] sm:min-w-0">
+          <CourseTable
+            courses={localCourses}
+            loading={loading}
+            onEdit={handleEditCourse}
+          />
+        </div>
       </div>
 
       <CourseEditorModal

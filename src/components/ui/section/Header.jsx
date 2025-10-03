@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { MdMenu, MdNotifications, MdClear } from "react-icons/md";
 import { IoMoon, IoSunny } from "react-icons/io5";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { DARK_COLORS, LIGHT_COLORS } from "../shared/theme";
 
 const Header = ({ onMenuClick }) => {
   const { isDark, colors, toggleTheme } = useTheme();
@@ -99,7 +98,7 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <header
-      className="sticky top-0 left-0 right-15 h-20 w-full flex items-center gap-4 px-4 md:px-6 shadow-lg border-b backdrop-blur-sm overflow-visible transition-colors duration-300"
+      className="sticky top-0 left-0 right-0 h-20 w-full flex items-center gap-4 px-4 md:px-6 shadow-lg border-b backdrop-blur-sm overflow-visible transition-colors duration-300"
       style={{
         backgroundColor: `${colors.card}CC`,
         borderColor: colors.ring,

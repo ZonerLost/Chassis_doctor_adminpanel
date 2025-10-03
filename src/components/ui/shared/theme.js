@@ -87,4 +87,43 @@ export const getThemeColors = () => {
 };
 
 // Keep COLORS for backward compatibility
-export const COLORS = DARK_COLORS;
+// Dynamic COLORS proxy reading from CSS variables to stay in sync
+// with ThemeContext, while keeping backward compatibility for
+// components that import { COLORS } directly.
+const VAR_KEYS = [
+  "bg",
+  "bg2",
+  "card",
+  "text",
+  "text2",
+  "gold",
+  "purple",
+  "ring",
+  "accent",
+  "hover",
+  "ok",
+  "warn",
+  "danger",
+];
+
+export const COLORS = new Proxy({}, {
+  get(_target, prop) {
+    const key = String(prop);
+    if (!VAR_KEYS.includes(key)) {
+      return undefined;
+    }
+    try {
+      if (typeof window !== "undefined") {
+        const cssVar = `--color-${key}`;
+        const val = getComputedStyle(document.documentElement)
+          .getPropertyValue(cssVar)
+          .trim();
+        if (val) return val;
+      }
+    } catch {}
+    // Fallback to JS theme constants when CSS vars unavailable
+    return (localStorage.getItem("theme") !== "light"
+      ? DARK_COLORS
+      : LIGHT_COLORS)[key];
+  },
+});
