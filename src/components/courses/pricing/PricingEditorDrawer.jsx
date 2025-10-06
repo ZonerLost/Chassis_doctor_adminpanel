@@ -1,90 +1,101 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "../../../contexts/ThemeContext";
 
-export default function PricingEditorDrawer({ open, onClose, onSave, row }) {
+export default function PricingEditorDrawer({
+  open,
+  initial,
+  onClose,
+  onSave,
+}) {
   const { colors } = useTheme();
-  const [form, setForm] = useState(row || { isPaid: false, priceCents: 0 });
-  useEffect(() => setForm(row || { isPaid: false, priceCents: 0 }), [row]);
+  const [form, setForm] = useState(
+    initial || { name: "", price: "", features: [] }
+  );
+  useEffect(
+    () => setForm(initial || { name: "", price: "", features: [] }),
+    [initial, open]
+  );
   if (!open) return null;
-  const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/60" onClick={onClose} />
+  return createPortal(
+    <div className="fixed inset-0 z-[3000] flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/55" onClick={onClose} />
       <div
-        className="w-full max-w-md h-full p-5 overflow-y-auto"
-        style={{ backgroundColor: colors.bg2, color: colors.text }}
+        className="relative w-full sm:w-[560px] max-w-full rounded-t-xl sm:rounded-xl shadow-2xl overflow-hidden"
+        style={{
+          backgroundColor: colors.card || colors.bg2,
+          color: colors.text,
+        }}
       >
-        <h3 className="text-lg font-semibold mb-1">Pricing & Access</h3>
-        <div className="space-y-3 mt-4">
-          <label className="block text-sm">
-            <span className="block text-xs mb-1" style={{ color: colors.text2 }}>
-              Access
-            </span>
-            <select
-              className="w-full rounded-xl border px-3 py-2"
-              style={{
-                borderColor: colors.ring,
-                backgroundColor: colors.hover,
-                color: colors.text,
-              }}
-              value={form.isPaid ? "paid" : "free"}
-              onChange={(e) => patch("isPaid", e.target.value === "paid")}
-            >
-              <option value="free">Free</option>
-              <option value="paid">Paid</option>
-            </select>
-          </label>
-          {form.isPaid && (
-            <label className="block text-sm">
-              <span className="block text-xs mb-1" style={{ color: colors.text2 }}>
-                Price (USD)
-              </span>
-              <input
-                type="number"
-                min={0}
-                className="w-full rounded-xl border px-3 py-2"
-                style={{
-                  borderColor: colors.ring,
-                  backgroundColor: colors.hover,
-                  color: colors.text,
-                }}
-                value={(form.priceCents || 0) / 100}
-                onChange={(e) =>
-                  patch(
-                    "priceCents",
-                    Math.round(Math.max(0, Number(e.target.value || 0)) * 100)
-                  )
-                }
-              />
-            </label>
-          )}
+        <div className="p-4 border-b" style={{ borderColor: colors.ring }}>
+          <div className="font-semibold">
+            {initial?.id ? "Edit Plan" : "New Plan"}
+          </div>
         </div>
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            className="px-4 py-2 rounded-xl border"
+
+        <div className="p-4 space-y-3">
+          <input
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Name"
+            className="w-full rounded-lg px-3 py-2"
             style={{
-              borderColor: colors.ring,
-              backgroundColor: colors.hover,
-              color: colors.text2,
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text,
             }}
+          />
+          <input
+            value={form.price}
+            onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+            placeholder="Price"
+            className="w-full rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text,
+            }}
+          />
+          <textarea
+            value={(form.features || []).join("\n")}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, features: e.target.value.split("\n") }))
+            }
+            rows={4}
+            className="w-full rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text,
+            }}
+          />
+        </div>
+
+        <div
+          className="p-4 border-t flex justify-end gap-2"
+          style={{ borderColor: colors.ring }}
+        >
+          <button
             onClick={onClose}
+            className="px-3 py-2 rounded-lg"
+            style={{ backgroundColor: colors.bg2, color: colors.text }}
           >
             Cancel
           </button>
           <button
-            className="px-4 py-2 rounded-xl border"
-            style={{
-              borderColor: colors.accent,
-              backgroundColor: colors.accent + "26",
-              color: colors.accent,
+            onClick={() => {
+              onSave?.(form);
+              onClose?.();
             }}
-            onClick={() => onSave(form)}
+            className="px-4 py-2 rounded-lg"
+            style={{ backgroundColor: colors.accent, color: colors.bg }}
           >
             Save
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

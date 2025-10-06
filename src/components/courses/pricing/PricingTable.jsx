@@ -1,88 +1,161 @@
 import React from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 
-const fmt = (cents) => `${((cents || 0) / 100).toFixed(2)}`;
-
-export default function PricingTable({ rows = [], loading, onEdit }) {
+export default function PricingTable({ plans = [], onEdit }) {
   const { colors } = useTheme();
+  const rows = Array.isArray(plans) ? plans : [];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-[680px] w-full text-sm">
-        <thead>
-          <tr
-            className="uppercase text-xs"
-            style={{ color: "#d4af37", backgroundColor: colors.hover }}
-          >
-            <th className="px-4 py-3 text-left">Course</th>
-            <th className="px-4 py-3 text-left">Access</th>
-            <th className="px-4 py-3 text-left">Price</th>
-            <th className="px-4 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody
-          className="divide-y"
-          style={{ borderColor: colors.ring, color: colors.text }}
+    <div className="space-y-3">
+      {/* Desktop/tablet table */}
+      <div
+        className="hidden md:block overflow-x-auto rounded-lg"
+        style={{
+          border: `1px solid ${colors.ring}`,
+          backgroundColor: colors.bg2,
+        }}
+      >
+        <table
+          className="min-w-[640px] w-full text-sm"
+          style={{ borderCollapse: "separate", borderSpacing: 0 }}
         >
-          {loading ? (
-            <tr>
-              <td
-                colSpan={4}
-                className="px-4 py-8 text-center"
-                style={{ color: colors.text2 }}
-              >
-                Loading…
-              </td>
+          <thead>
+            <tr
+              style={{
+                color: "#d4af37",
+                borderBottom: `1px solid ${colors.ring}`,
+              }}
+            >
+              <th className="px-4 py-3 text-left">Plan</th>
+              <th className="px-4 py-3 text-left">Price</th>
+              <th className="px-4 py-3 text-left">Features</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
-          ) : rows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={4}
-                className="px-4 py-8 text-center"
-                style={{ color: colors.text2 }}
-              >
-                No courses
-              </td>
-            </tr>
-          ) : (
-            rows.map((p) => (
-              <tr
-                key={p.courseId}
-                style={{ backgroundColor: colors.bg2 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = colors.hover)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = colors.bg2)
-                }
-              >
-                <td className="px-4 py-3" style={{ color: colors.text }}>
-                  {p.title}
+          </thead>
+
+          <tbody style={{ color: colors.text }}>
+            {rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-10 text-center"
+                  style={{ color: colors.text2 }}
+                >
+                  No plans
                 </td>
-                <td className="px-4 py-3" style={{ color: colors.text2 }}>
-                  {p.isPaid ? "Paid" : "Free"}
-                </td>
-                <td className="px-4 py-3" style={{ color: colors.text2 }}>
-                  {p.isPaid ? fmt(p.priceCents) : "—"}
-                </td>
-                <td className="px-4 py-3 text-right">
+              </tr>
+            ) : (
+              rows.map((p) => (
+                <tr key={p.id}>
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      color: colors.text,
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
+                    {p.name}
+                  </td>
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      color: colors.text2,
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
+                    {p.price}
+                  </td>
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      color: colors.text2,
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
+                    {(p.features || []).join(", ")}
+                  </td>
+                  <td
+                    className="px-4 py-3 text-right"
+                    style={{ borderBottom: `1px solid ${colors.ring}` }}
+                  >
+                    <button
+                      onClick={() => onEdit?.(p)}
+                      className="px-3 py-1.5 rounded-xl border text-xs"
+                      style={{
+                        borderColor: colors.ring,
+                        backgroundColor: colors.bg2,
+                        color: colors.text,
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {rows.length === 0 ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            No plans
+          </div>
+        ) : (
+          rows.map((p) => (
+            <div
+              key={p.id}
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: colors.card || colors.bg2,
+                border: `1px solid ${colors.ring}`,
+                color: colors.text,
+              }}
+            >
+              <div className="flex items-start justify-between">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>{p.name}</div>
+                  <div style={{ color: colors.text2, fontSize: 13 }}>
+                    {p.price}
+                  </div>
+                  <div
+                    style={{
+                      color: colors.text2,
+                      fontSize: 13,
+                      marginTop: 6,
+                    }}
+                  >
+                    {(p.features || []).slice(0, 3).join(", ")}
+                  </div>
+                </div>
+
+                <div>
                   <button
+                    onClick={() => onEdit?.(p)}
                     className="px-3 py-1.5 rounded-xl border text-xs"
                     style={{
                       borderColor: colors.ring,
-                      backgroundColor: colors.hover,
-                      color: colors.text2,
+                      backgroundColor: colors.bg2,
+                      color: colors.text,
                     }}
-                    onClick={() => onEdit(p)}
                   >
                     Edit
                   </button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

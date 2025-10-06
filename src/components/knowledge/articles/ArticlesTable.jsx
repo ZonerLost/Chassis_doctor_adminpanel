@@ -56,16 +56,24 @@ export default function ArticlesTable({
 
   const safeCategories = Array.isArray(categories) ? categories : [];
 
+  const formatDate = (d) => {
+    try {
+      return d ? new Date(d).toLocaleDateString() : "—";
+    } catch {
+      return "—";
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Filters row: search + categories on one row */}
-      <div className="flex items-center gap-3 mb-2">
+      {/* Filters row: stack on small screens, inline on wider */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
         <input
           type="search"
           placeholder="Search articles..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 h-10 rounded-lg px-4"
+          className="w-full sm:flex-1 h-10 rounded-lg px-4"
           style={{
             backgroundColor: colors.bg2,
             color: colors.text,
@@ -76,7 +84,7 @@ export default function ArticlesTable({
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="h-10 rounded-lg px-3"
+          className="h-10 rounded-lg px-3 w-full sm:w-auto"
           style={{
             backgroundColor: colors.bg2,
             color: colors.text,
@@ -92,14 +100,31 @@ export default function ArticlesTable({
         </select>
       </div>
 
-      {/* Articles table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full w-full text-sm">
+      {/* Desktop / tablet: table (hidden on small screens, scrolls when needed) */}
+      <div
+        className="hidden md:block overflow-x-auto rounded-lg"
+        style={{
+          border: `1px solid ${colors.ring}`,
+          backgroundColor: colors.bg2,
+        }}
+      >
+        <table
+          className="min-w-[720px] w-full text-sm"
+          style={{
+            borderCollapse: "separate",
+            borderSpacing: 0,
+            backgroundColor: colors.bg2,
+          }}
+        >
           <thead>
-            <tr style={{ color: "#d4af37" }}>
+            <tr
+              style={{
+                color: "#d4af37",
+                borderBottom: `1px solid ${colors.ring}`,
+              }}
+            >
               <th className="text-left px-4 py-3">Title</th>
               <th className="text-left px-4 py-3">Category</th>
-              <th className="text-left px-4 py-3">Author</th>
               <th className="text-left px-4 py-3">Status</th>
               <th className="text-left px-4 py-3">Updated</th>
               <th className="text-right px-4 py-3">Actions</th>
@@ -109,7 +134,7 @@ export default function ArticlesTable({
             {loading ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   className="px-4 py-8 text-center"
                   style={{ color: colors.text2 }}
                 >
@@ -119,7 +144,7 @@ export default function ArticlesTable({
             ) : filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   className="px-4 py-8 text-center"
                   style={{ color: colors.text2 }}
                 >
@@ -133,10 +158,14 @@ export default function ArticlesTable({
                   style={{ backgroundColor: colors.bg2 }}
                   className="hover:opacity-95"
                 >
-                  <td className="px-4 py-3">
-                    <div className="font-medium" style={{ color: colors.text }}>
-                      {a.title}
-                    </div>
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      color: colors.text,
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
+                    <div className="font-medium">{a.title}</div>
                     {a.summary ? (
                       <div
                         className="text-xs mt-1"
@@ -147,31 +176,37 @@ export default function ArticlesTable({
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3" style={{ color: colors.text2 }}>
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      color: colors.text2,
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
                     {a.category || a.categoryId || "Uncategorized"}
                   </td>
-                  <td className="px-4 py-3" style={{ color: colors.text2 }}>
-                    {a.author || "Unknown"}
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      color: colors.text2,
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
+                    {a.status || "Draft"}
                   </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className="px-2 py-1 rounded text-xs"
-                      style={{
-                        backgroundColor:
-                          a.status === "published" ? "#4CAF5020" : "#99999920",
-                        color:
-                          a.status === "published" ? "#4CAF50" : colors.text2,
-                      }}
-                    >
-                      {a.status || "Draft"}
-                    </span>
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      color: colors.text2,
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
+                    {formatDate(a.updatedAt)}
                   </td>
-                  <td className="px-4 py-3" style={{ color: colors.text2 }}>
-                    {a.updatedAt
-                      ? new Date(a.updatedAt).toLocaleDateString()
-                      : "Never"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  <td
+                    className="px-4 py-3 text-right"
+                    style={{ borderBottom: `1px solid ${colors.ring}` }}
+                  >
                     <button
                       onClick={() => onEdit?.(a)}
                       className="px-3 py-1.5 rounded-xl border text-xs"
@@ -190,6 +225,88 @@ export default function ArticlesTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: stacked cards (visible only on small screens) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            Loading articles...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            No articles
+          </div>
+        ) : (
+          filtered.map((a) => (
+            <div
+              key={a.id}
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: colors.card || colors.bg2,
+                border: `1px solid ${colors.ring}`,
+                color: colors.text,
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: colors.text }}>
+                    {a.title}
+                  </div>
+                  <div
+                    style={{ color: colors.text2, fontSize: 13, marginTop: 6 }}
+                  >
+                    {a.categoryName || a.categoryId || "—"}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: colors.text2, fontSize: 12 }}>
+                    {a.status || "Draft"}
+                  </div>
+                  <div style={{ color: colors.text2, fontSize: 12 }}>
+                    {formatDate(a.updatedAt)}
+                  </div>
+                </div>
+              </div>
+
+              {a.summary || a.excerpt ? (
+                <div className="mt-3 text-sm" style={{ color: colors.text2 }}>
+                  {a.summary || a.excerpt}
+                </div>
+              ) : null}
+
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={() => onEdit?.(a)}
+                  className="px-3 py-1.5 rounded-xl border text-xs"
+                  style={{
+                    borderColor: colors.ring,
+                    backgroundColor: colors.bg2,
+                    color: colors.text,
+                  }}
+                  aria-label={`Edit ${a.title}`}
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -1,43 +1,41 @@
 import React from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 
-function Kpi({ label, value, hint }) {
+export default function EngagementKPIs({ items = [] }) {
   const { colors } = useTheme();
-  return (
-    <div
-      className="p-4 rounded-2xl border"
-      style={{ borderColor: colors.ring, backgroundColor: colors.hover }}
-    >
-      <div className="text-xs mb-1" style={{ color: colors.text2 }}>
-        {label}
-      </div>
-      <div className="text-xl font-semibold" style={{ color: colors.text }}>
-        {value}
-      </div>
-      {hint && (
-        <div className="text-xs mt-1" style={{ color: colors.text2 }}>
-          {hint}
-        </div>
-      )}
-    </div>
-  );
-}
 
-export default function EngagementKPIs({ kpis = {} }) {
+  // keep a safe default but render as a simple list (no responsive grid)
+  const list = Array.isArray(items) ? items : [];
+
+  if (list.length === 0) {
+    return (
+      <div style={{ color: colors.text }}>
+        <div style={{ color: colors.text2 }}>No KPI data.</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <Kpi label="Avg Daily Active" value={kpis.avgAU ?? 0} />
-      <Kpi label="Avg 7‑day Retention" value={`${kpis.avgR7 ?? 0}%`} />
-      <Kpi
-        label="Module Usage — Courses"
-        value={kpis.modCourses ?? 0}
-        hint="events over period"
-      />
-      <Kpi
-        label="Module Usage — Chassis"
-        value={kpis.modChassis ?? 0}
-        hint="events over period"
-      />
+    <div style={{ color: colors.text }}>
+      {list.map((k) => (
+        <div
+          key={k.id ?? k.key}
+          style={{
+            backgroundColor: colors.bg2,
+            border: `1px solid ${colors.ring}`,
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 10,
+            color: colors.text,
+          }}
+        >
+          <div style={{ color: colors.accent, fontWeight: 600, fontSize: 12 }}>
+            {k.label}
+          </div>
+          <div style={{ fontSize: 18 }}>{k.value}</div>
+          {k.sparkline && <div style={{ marginTop: 8 }}>{k.sparkline}</div>}
+        </div>
+      ))}
     </div>
   );
 }

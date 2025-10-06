@@ -44,9 +44,9 @@ export default function TrackConfigsTable({
         />
       </div>
 
-      {/* Table */}
+      {/* Desktop / tablet: table (hidden on small screens) */}
       <div
-        className="overflow-x-auto rounded-lg"
+        className="hidden md:block overflow-x-auto rounded-lg"
         style={{
           border: `1px solid ${colors.ring}`,
           backgroundColor: colors.bg2,
@@ -146,6 +146,97 @@ export default function TrackConfigsTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: stacked cards (visible on small screens) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            Loading…
+          </div>
+        ) : processed.length === 0 ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            No track configurations found.
+          </div>
+        ) : (
+          processed.map((config) => (
+            <div
+              key={config.id}
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: colors.card || colors.bg2,
+                border: `1px solid ${colors.ring}`,
+                color: colors.text,
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: colors.text }}>
+                    {config.trackName}
+                  </div>
+                  <div style={{ color: colors.text2, marginTop: 6 }}>
+                    {config.category}
+                  </div>
+
+                  <div className="mt-2 text-sm" style={{ color: colors.text2 }}>
+                    Front: {config.frontWing || "—"} • Rear:{" "}
+                    {config.rearWing || "—"}
+                  </div>
+
+                  <div className="mt-1 text-sm" style={{ color: colors.text2 }}>
+                    Susp: {config.suspension || "—"} • Brake:{" "}
+                    {config.brakeBalance ?? "—"}%
+                  </div>
+
+                  {config.lastUsed ? (
+                    <div
+                      className="mt-1 text-xs"
+                      style={{ color: colors.text2 }}
+                    >
+                      Last used:{" "}
+                      {new Date(config.lastUsed).toLocaleDateString()}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    alignItems: "flex-end",
+                  }}
+                >
+                  <button
+                    className="px-3 py-1.5 rounded-xl border text-xs"
+                    style={{
+                      borderColor: colors.ring,
+                      backgroundColor: colors.bg,
+                      color: colors.text2,
+                    }}
+                    onClick={() => onEdit && onEdit(config)}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -114,8 +114,9 @@ export default function SymptomTable({ rows = [], loading = false, onEdit }) {
         </div>
       </div>
 
+      {/* Desktop/tablet original table (hidden on small screens) */}
       <div
-        className="overflow-x-auto rounded-lg"
+        className="hidden md:block overflow-x-auto rounded-lg"
         style={{
           border: `1px solid ${colors.ring}`,
           backgroundColor: colors.bg2,
@@ -262,6 +263,103 @@ export default function SymptomTable({ rows = [], loading = false, onEdit }) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: stacked cards (visible on small screens) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            Loading…
+          </div>
+        ) : pageItems.length === 0 ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            No symptoms found.
+          </div>
+        ) : (
+          pageItems.map((symptom) => (
+            <div
+              key={symptom.id}
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: colors.card || colors.bg2,
+                border: `1px solid ${colors.ring}`,
+                color: colors.text,
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: colors.text }}>
+                    {symptom.name}
+                  </div>
+                  <div
+                    style={{ color: colors.text2, fontSize: 13, marginTop: 6 }}
+                  >
+                    {symptom.category || "-"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    textAlign: "right",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    minWidth: 80,
+                    alignItems: "flex-end",
+                  }}
+                >
+                  <div style={{ color: colors.text2, fontSize: 12 }}>
+                    {fmtPct(symptom.frequency)}
+                  </div>
+
+                  <span
+                    className="px-2 py-1 rounded-lg text-xs font-medium"
+                    style={{
+                      backgroundColor:
+                        getSeverityColor(symptom.severity) + "20",
+                      color: getSeverityColor(symptom.severity),
+                    }}
+                  >
+                    {symptom.severity}
+                  </span>
+
+                  <button
+                    onClick={() => onEdit?.(symptom)}
+                    className="px-3 py-1.5 rounded-xl border text-xs"
+                    style={{
+                      borderColor: colors.ring,
+                      backgroundColor: colors.bg,
+                      color: colors.text2,
+                      marginTop: 6,
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+
+              {symptom.description ? (
+                <div className="mt-3 text-sm" style={{ color: colors.text2 }}>
+                  {symptom.description}
+                </div>
+              ) : null}
+            </div>
+          ))
+        )}
       </div>
 
       {totalPages > 1 && (

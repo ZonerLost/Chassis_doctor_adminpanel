@@ -69,9 +69,120 @@ export default function MappingRulesTable({
         />
       </div>
 
-      {/* Table */}
+      {/* Mobile: stacked cards (visible on small screens) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            Loading…
+          </div>
+        ) : pageItems.length === 0 ? (
+          <div
+            className="p-3 rounded-lg"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text2,
+            }}
+          >
+            No mapping rules found.
+          </div>
+        ) : (
+          pageItems.map((rule) => (
+            <div
+              key={rule.id}
+              className="p-3 rounded-lg"
+              style={{
+                backgroundColor: colors.card || colors.bg2,
+                border: `1px solid ${colors.ring}`,
+                color: colors.text,
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div style={{ minWidth: 0 }}>
+                  <div className="font-medium" style={{ color: colors.text }}>
+                    {rule.name}
+                  </div>
+
+                  <div className="mt-2">
+                    <code
+                      className="text-xs px-2 py-1 rounded"
+                      style={{
+                        backgroundColor: "#00000010",
+                        color: colors.text2,
+                      }}
+                    >
+                      {rule.condition}
+                    </code>
+                  </div>
+
+                  <div className="mt-2" style={{ color: colors.text2 }}>
+                    {rule.action}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    textAlign: "right",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    className="px-2 py-1 rounded-lg text-xs font-medium"
+                    style={{
+                      backgroundColor: getPriorityColor(rule.priority) + "20",
+                      color: getPriorityColor(rule.priority),
+                    }}
+                  >
+                    {rule.priority}
+                  </span>
+
+                  <div style={{ color: colors.text2, fontSize: 13 }}>
+                    {rule.successRate}%
+                  </div>
+
+                  <span
+                    className="px-2 py-1 rounded-lg text-xs"
+                    style={{
+                      backgroundColor: rule.isActive
+                        ? "#22C55E20"
+                        : "#EF444420",
+                      color: rule.isActive ? "#22C55E" : "#EF4444",
+                    }}
+                  >
+                    {rule.isActive ? "Active" : "Inactive"}
+                  </span>
+
+                  <button
+                    className="px-3 py-1.5 rounded-xl border text-xs"
+                    style={{
+                      borderColor: colors.ring,
+                      backgroundColor: colors.bg2,
+                      color: colors.text2,
+                      marginTop: 6,
+                    }}
+                    onClick={() => onEdit && onEdit(rule)}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table (hidden on small screens, visible md+) */}
       <div
-        className="overflow-x-auto rounded-lg"
+        className="hidden md:block overflow-x-auto rounded-lg"
         style={{
           border: `1px solid ${colors.ring}`,
           backgroundColor: colors.bg2,
