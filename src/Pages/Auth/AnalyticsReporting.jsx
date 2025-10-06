@@ -1,6 +1,6 @@
 import React from "react";
 import SectionCard from "../../components/ui/common/SectionCard";
-import DateRangeBar from "../../components/ui/common/DateRangeBar";
+import DateRangeBar from "../../Components/ui/common/DateRangeBar";
 // fixed: import hooks from src/hooks (go up to src then into hooks)
 import { useEngagement } from "../../hooks/useEngagement";
 import { useCourseAnalytics } from "../../hooks/useCourseAnalytics";

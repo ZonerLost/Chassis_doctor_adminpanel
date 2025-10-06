@@ -1,4 +1,3 @@
-/* eslint-env node */
 const fs = require("fs");
 const path = require("path");
 
@@ -20,7 +19,27 @@ function walk(dir) {
   return results;
 }
 
-// removed unused findActualPath
+function findActualPath(p) {
+  // Walk segments and match case-insensitively but return actual case
+  const parts = p.split(path.sep).filter(Boolean);
+  let cur = path.isAbsolute(p) ? path.parse(p).root : "";
+  for (const part of parts) {
+    const entries = fs.readdirSync(cur || ".");
+    const match = entries.find((e) => e === part);
+    if (match) {
+      cur = path.join(cur, match);
+    } else {
+      // try case-insensitive match
+      const ci = entries.find((e) => e.toLowerCase() === part.toLowerCase());
+      if (ci) {
+        cur = path.join(cur, ci);
+      } else {
+        return null;
+      }
+    }
+  }
+  return cur;
+}
 
 function resolveImport(importer, imp) {
   if (!imp.startsWith(".") && !imp.startsWith("/")) return null;
@@ -28,7 +47,7 @@ function resolveImport(importer, imp) {
   let resolved = path.resolve(base, imp);
 
   // if it's a directory, look for index files
-  const tryPaths = [
+  tryPaths = [
     resolved,
     ...exts.map((e) => resolved + e),
     ...exts.map((e) => path.join(resolved, "index" + e)),
@@ -112,3 +131,4 @@ function checkFile(file) {
   });
   process.exit(2);
 })();
+
