@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { MdClose, MdDelete } from "react-icons/md";
+import { MdDelete } from "react-icons/md";
 import { useTheme } from "../../../contexts/ThemeContext";
-
-const SEVERITY_OPTIONS = ["Low", "Medium", "High", "Critical"];
 
 export default function CourseEditorModal({
   isOpen,
@@ -13,11 +11,13 @@ export default function CourseEditorModal({
   onDelete,
 }) {
   const { colors } = useTheme();
-  const [form, setForm] = useState(course || { title: "", description: "" });
+  const [form, setForm] = useState(
+    course || { name: "", category: "", description: "" }
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setForm(course || { title: "", description: "" });
+    setForm(course || { name: "", category: "", description: "" });
   }, [course, isOpen]);
 
   useEffect(() => {
@@ -30,6 +30,10 @@ export default function CourseEditorModal({
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
     if (saving) return;
+    if (!form.name?.trim()) {
+      // basic validation: require name
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -38,13 +42,10 @@ export default function CourseEditorModal({
         title: form.name,
         name: form.name,
         category: form.category,
-        severity: form.severity,
-        frequency: form.frequency,
         description: form.description,
         updatedAt: new Date().toISOString(),
       };
 
-      // await parent save so caller can update state
       await onSave?.(payload);
       onClose && onClose();
     } catch (err) {
@@ -72,14 +73,15 @@ export default function CourseEditorModal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      {/* Full width on mobile, constrained on larger screens */}
-      <div
-        className="relative w-full max-w-full sm:max-w-2xl rounded-xl shadow-2xl overflow-hidden"
+      <form
+        onSubmit={handleSubmit}
+        className="relative w-full max-w-full sm:max-w-2xl rounded-t-xl sm:rounded-xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: colors.card || colors.bg2,
           color: colors.text,
+          maxHeight: "90vh",
         }}
       >
         <div className="p-4 border-b" style={{ borderColor: colors.ring }}>
@@ -88,11 +90,35 @@ export default function CourseEditorModal({
           </div>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div
+          className="p-4 space-y-3 overflow-auto"
+          style={{ maxHeight: "calc(90vh - 160px)" }}
+        >
+          <label className="block text-sm" style={{ color: colors.text2 }}>
+            Name
+          </label>
           <input
-            value={form.title}
-            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-            placeholder="Title"
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Course name"
+            className="w-full rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: colors.bg2,
+              border: `1px solid ${colors.ring}`,
+              color: colors.text,
+            }}
+            required
+          />
+
+          <label className="block text-sm" style={{ color: colors.text2 }}>
+            Category
+          </label>
+          <input
+            value={form.category}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, category: e.target.value }))
+            }
+            placeholder="Category"
             className="w-full rounded-lg px-3 py-2"
             style={{
               backgroundColor: colors.bg2,
@@ -100,6 +126,10 @@ export default function CourseEditorModal({
               color: colors.text,
             }}
           />
+
+          <label className="block text-sm" style={{ color: colors.text2 }}>
+            Description
+          </label>
           <textarea
             value={form.description}
             onChange={(e) =>
@@ -116,45 +146,53 @@ export default function CourseEditorModal({
         </div>
 
         <div
-          className="p-4 border-t flex justify-end gap-2"
+          className="p-4 border-t flex flex-col sm:flex-row sm:justify-end gap-2"
           style={{ borderColor: colors.ring }}
         >
-          <button
-            onClick={onClose}
-            className="px-3 py-2 rounded-lg"
-            style={{
-              backgroundColor: colors.bg2,
-              color: colors.text,
-            }}
-          >
-            Cancel
-          </button>
-          {course?.id && (
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
             <button
-              onClick={handleDelete}
-              className="px-3 py-2 rounded-lg flex items-center gap-1"
+              type="button"
+              onClick={onClose}
+              className="px-3 py-2 rounded-lg"
               style={{
-                backgroundColor: colors.error || "#e53e3e",
+                backgroundColor: colors.bg2,
+                color: colors.text,
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+
+            {course?.id && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-3 py-2 rounded-lg flex items-center gap-1"
+                style={{
+                  backgroundColor: colors.error || "#e53e3e",
+                  color: colors.bg,
+                }}
+                disabled={saving}
+              >
+                <MdDelete />
+                Delete
+              </button>
+            )}
+
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg"
+              style={{
+                backgroundColor: colors.accent,
                 color: colors.bg,
               }}
               disabled={saving}
             >
-              <MdDelete />
-              Delete
+              {saving ? "Saving…" : "Save"}
             </button>
-          )}
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 rounded-lg"
-            style={{
-              backgroundColor: colors.accent,
-              color: colors.bg,
-            }}
-          >
-            Save
-          </button>
+          </div>
         </div>
-      </div>
+      </form>
     </div>,
     document.body
   );
