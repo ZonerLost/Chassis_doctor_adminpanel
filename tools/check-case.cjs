@@ -1,3 +1,4 @@
+/* eslint-env node */
 const fs = require("fs");
 const path = require("path");
 
@@ -19,10 +20,14 @@ function walk(dir) {
   return results;
 }
 
+// removed unused findActualPath
+
 function resolveImport(importer, imp) {
   if (!imp.startsWith(".") && !imp.startsWith("/")) return null;
   const base = path.dirname(importer);
   let resolved = path.resolve(base, imp);
+
+  // if it's a directory, look for index files
   const tryPaths = [
     resolved,
     ...exts.map((e) => resolved + e),
@@ -49,7 +54,8 @@ function checkFile(file) {
   const mismatches = [];
   for (const imp of issues) {
     const resolved = resolveImport(file, imp);
-    if (!resolved) continue;
+    if (!resolved) continue; // missing file handled elsewhere
+    // Now check casing by walking path segments from project root
     const rel = path.relative(workspace, resolved);
     const parts = rel.split(path.sep);
     let cur = path.resolve(workspace);

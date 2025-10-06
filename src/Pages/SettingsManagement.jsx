@@ -61,12 +61,12 @@ export default function SettingsManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold" style={{ color: colors.text }}>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h1 className="text-xl sm:text-2xl font-semibold" style={{ color: colors.text }}>
           Settings
         </h1>
-        <div className="text-sm" style={{ color: colors.text2 }}>
+        <div className="text-xs sm:text-sm" style={{ color: colors.text2 }}>
           Manage profile, system and brand settings
         </div>
       </div>
@@ -77,12 +77,13 @@ export default function SettingsManagement() {
         style={{ border: `1px solid ${colors.ring}` }}
       >
         <div style={{ backgroundColor: colors.accent + "10" }}>
-          <div className="flex items-center gap-6 px-4 py-3">
+          <div className="px-2 sm:px-4 py-2 sm:py-3 overflow-x-auto">
+            <div className="flex items-center gap-2 sm:gap-4 md:gap-6 min-w-max">
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className="uppercase text-xs font-semibold"
+                className="uppercase text-xs font-semibold whitespace-nowrap"
                 style={{
                   color: colors.accent,
                   padding: "6px 10px",
@@ -96,6 +97,7 @@ export default function SettingsManagement() {
                 {t.label}
               </button>
             ))}
+            </div>
           </div>
         </div>
       </div>
@@ -103,7 +105,7 @@ export default function SettingsManagement() {
       <div>
         {tab === "profile" && (
           <div
-            className="rounded-2xl p-4"
+            className="rounded-2xl p-3 sm:p-4"
             style={{
               backgroundColor: colors.bg2,
               border: `1px solid ${colors.ring}`,
@@ -122,7 +124,7 @@ export default function SettingsManagement() {
 
         {tab === "system" && (
           <div
-            className="rounded-2xl p-4"
+            className="rounded-2xl p-3 sm:p-4"
             style={{
               backgroundColor: colors.bg2,
               border: `1px solid ${colors.ring}`,
@@ -139,7 +141,7 @@ export default function SettingsManagement() {
 
         {tab === "media" && (
           <div
-            className="rounded-2xl p-4"
+            className="rounded-2xl p-3 sm:p-4"
             style={{
               backgroundColor: colors.bg2,
               border: `1px solid ${colors.ring}`,
@@ -151,7 +153,7 @@ export default function SettingsManagement() {
 
         {tab === "brand" && (
           <div
-            className="rounded-2xl p-4"
+            className="rounded-2xl p-3 sm:p-4"
             style={{
               backgroundColor: colors.bg2,
               border: `1px solid ${colors.ring}`,
@@ -176,10 +178,10 @@ export default function SettingsManagement() {
       </div>
 
       {/* Persistent action bar */}
-      <div className="flex justify-end gap-3">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
         <button
           onClick={handleGlobalReset}
-          className="px-4 py-2 rounded-xl text-sm"
+          className="px-4 py-2 rounded-xl text-sm w-full sm:w-auto"
           style={{
             backgroundColor: colors.hover,
             border: `1px solid ${colors.ring}`,
@@ -191,7 +193,7 @@ export default function SettingsManagement() {
 
         <button
           onClick={handleGlobalSave}
-          className="px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center uppercase tracking-wider"
+          className="px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center uppercase tracking-wider w-full sm:w-auto"
           style={{
             backgroundColor: colors.bg2, // dark pill background
             color: colors.gold || "#D4AF37", // gold text

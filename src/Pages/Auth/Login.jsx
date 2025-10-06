@@ -67,21 +67,15 @@ const LoginPage = () => {
     setErrors((s) => ({ ...s, form: "" }));
 
     try {
-      let res;
       if (typeof userService.login === "function") {
         try {
-          res = await userService.login({ email, password: pwd });
+          await userService.login({ email, password: pwd });
         } catch {
-          res = await userService.login(email, pwd);
+          await userService.login(email, pwd);
         }
       } else if (typeof userService.authenticate === "function") {
-        res = await userService.authenticate({ email, password: pwd });
-      } 
-
-      
-
-     
-
+        await userService.authenticate({ email, password: pwd });
+      }
       navigate("/", { replace: true });
     } catch (err) {
       console.error("Login error:", err);

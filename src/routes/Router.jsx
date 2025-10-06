@@ -63,10 +63,10 @@ const lazyPage = (importer, page) =>
     }))
   );
 
-const renderLazy = (LazyComp) => (
+const renderLazy = (Comp) => (
   <ErrorBoundary>
     <Suspense fallback={<LoadingSpinner />}>
-      <LazyComp />
+      {React.createElement(Comp)}
     </Suspense>
   </ErrorBoundary>
 );

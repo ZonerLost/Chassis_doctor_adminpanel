@@ -120,7 +120,9 @@ export const COLORS = new Proxy({}, {
           .trim();
         if (val) return val;
       }
-    } catch {}
+    } catch (e) {
+      void e; // ignore CSS variable read errors
+    }
     // Fallback to JS theme constants when CSS vars unavailable
     return (localStorage.getItem("theme") !== "light"
       ? DARK_COLORS
