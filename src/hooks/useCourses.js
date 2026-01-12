@@ -4,8 +4,8 @@ import {
   createCourse,
   updateCourse,
   deleteCourse,
-} from "../data/courses.service";
-import { listRevisions } from "../data/knowledge.service";
+} from "../services/courses.service";
+import { listRevisions } from "../services/knowledge.service";
 
 function shallowEqual(a, b) {
   if (a === b) return true;
@@ -49,44 +49,38 @@ export function useCourses(initial = {}) {
     };
   }, []);
 
-  const load = useCallback(
-    async (patch = {}) => {
-      // Merge current state with patch (use stateRef to avoid stale closure)
-      const next = { ...stateRef.current, ...patch };
+  // inside useCourses.js
 
-      // If nothing changed, avoid unnecessary setState but still fetch once (keeps UI in sync)
-      const willSetState = !shallowEqual(next, stateRef.current);
+  const load = useCallback(async (patch = {}) => {
+    const next = { ...stateRef.current, ...patch };
 
-      // bump fetch id for this request
-      const id = ++fetchId.current;
+    const willSetState = !shallowEqual(next, stateRef.current);
 
-      if (willSetState && mounted.current) {
-        // set state only if different to avoid spurious renders
-        setState((prev) => (shallowEqual(prev, next) ? prev : next));
-      }
+    const id = ++fetchId.current;
 
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await listCourses(next);
-        if (!mounted.current || fetchId.current !== id) return; // stale -> ignore
+    if (willSetState && mounted.current) {
+      setState((prev) => (shallowEqual(prev, next) ? prev : next));
+    }
 
-        // Normalize response shape { data, total } expected from your service
-        const data = res?.data ?? res?.rows ?? res?.items ?? [];
-        const totalCount =
-          typeof res?.total === "number" ? res.total : data.length;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await listCourses(next);
+      if (!mounted.current || fetchId.current !== id) return;
 
-        setRows(data);
-        setTotal(totalCount);
-      } catch (err) {
-        console.error("useCourses load error:", err);
-        if (mounted.current && fetchId.current === id) setError(err);
-      } finally {
-        if (mounted.current && fetchId.current === id) setLoading(false);
-      }
-    },
-    [] // stable
-  );
+      const data = res?.data ?? res?.rows ?? res?.items ?? [];
+      const totalCount =
+        typeof res?.total === "number" ? res.total : data.length;
+
+      setRows(Array.isArray(data) ? data : []);
+      setTotal(totalCount);
+    } catch (err) {
+      console.error("useCourses load error:", err);
+      if (mounted.current && fetchId.current === id) setError(err);
+    } finally {
+      if (mounted.current && fetchId.current === id) setLoading(false);
+    }
+  }, []);
 
   // initial load once
   useEffect(() => {

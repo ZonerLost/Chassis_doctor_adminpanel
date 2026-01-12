@@ -1,18 +1,18 @@
 import React from "react";
-import SectionCard from "../../components/ui/common/SectionCard";
-import DateRangeBar from "../../components/ui/common/DateRangeBar";
+import SectionCard from "../components/ui/common/SectionCard";
+import DateRangeBar from "../components/ui/common/DateRangeBar";
 // fixed: import hooks from src/hooks (go up to src then into hooks)
-import { useEngagement } from "../../hooks/useEngagement";
-import { useCourseAnalytics } from "../../hooks/useCourseAnalytics";
-import { useChassisAnalytics } from "../../hooks/useChassisAnalytics";
-import { useExports } from "../../hooks/useExports";
+import { useEngagement } from "../hooks/useEngagement";
+import { useCourseAnalytics } from "../hooks/useCourseAnalytics";
+import { useChassisAnalytics } from "../hooks/useChassisAnalytics";
+import { useExports } from "../hooks/useExports";
 // removed shared/theme; use theme context instead
-import { useTheme } from "../../contexts/ThemeContext";
-import EngagementKPIs from "../../components/analytics/engagement/EngagementKPIs";
-import EngagementSparkline from "../../components/analytics/engagement/EngagementSparkline";
-import CourseAnalyticsTable from "../../components/analytics/course/CourseAnalyticsTable";
-import ChassisAnalyticsTable from "../../components/analytics/chassis/ChassisAnalyticsTable";
-import ExportCenter from "../../components/analytics/export/ExportCenter";
+import { useTheme } from "../contexts/ThemeContext";
+import EngagementKPIs from "../components/analytics/engagement/EngagementKPIs";
+import EngagementSparkline from "../components/analytics/engagement/EngagementSparkline";
+import CourseAnalyticsTable from "../components/analytics/course/CourseAnalyticsTable";
+import ChassisAnalyticsTable from "../components/analytics/chassis/ChassisAnalyticsTable";
+import ExportCenter from "../components/analytics/export/ExportCenter";
 
 export default function AnalyticsReporting() {
   const engagement = useEngagement();

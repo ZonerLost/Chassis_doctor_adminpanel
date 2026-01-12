@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { useTheme } from "../../contexts/ThemeContext";
-import SectionCard from "../../components/ui/common/SectionCard";
-import SearchInput from "../../components/ui/common/SearchInput";
-import { useUsers } from "../../hooks/useUsers";
+import { useTheme } from "../contexts/ThemeContext";
+import SectionCard from "../components/ui/common/SectionCard";
+import SearchInput from "../components/ui/common/SearchInput";
+import { useUsers } from "../hooks/useUsers";
 import { MdPersonAdd } from "react-icons/md";
-import UserEditorModal from "../../components/user/UserEditorModal";
-import UserDirectoryTable from "../../components/user/UserDirectoryTable";
+import UserEditorModal from "../components/user/UserEditorModal";
+import UserDirectoryTable from "../components/user/UserDirectoryTable";
+import LoadingSpinner from "../components/ui/shared/LoadingSpinner.jsx";
 
 const UserManagement = () => {
   const { colors, isDark } = useTheme();
@@ -15,19 +16,19 @@ const UserManagement = () => {
   const [selected, setSelected] = useState(null);
   const [open, setOpen] = useState(false);
 
-  const { rows: users, save: saveUser } = useUsers();
+  const { rows: users, save: saveUser, loading } = useUsers();
 
   // Filter users based on search term, role, and status
   const filteredUsers = users.filter((user) => {
+    const term = searchTerm.toLowerCase();
     const matchesSearch =
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      (user.fullName || user.name || "").toLowerCase().includes(term) ||
+      (user.email || "").toLowerCase().includes(term);
     const matchesRole =
-      !roleFilter || user.role?.toLowerCase() === roleFilter.toLowerCase();
+      !roleFilter || (user.role || "").toLowerCase() === roleFilter.toLowerCase();
     const matchesStatus =
       !statusFilter ||
-      user.status?.toLowerCase() === statusFilter.toLowerCase();
-
+      (user.status || "").toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesRole && matchesStatus;
   });
 
@@ -184,23 +185,29 @@ const UserManagement = () => {
             className="overflow-hidden rounded-xl border"
             style={{ borderColor: colors.ring }}
           >
-            <UserDirectoryTable
-              rows={filteredUsers}
-              loading={false}
-              onEdit={onEdit}
-              onToggleSuspend={async (u) => {
-                // toggle status and save
-                const next = {
-                  ...u,
-                  status: u.status === "active" ? "suspended" : "active",
-                };
-                try {
-                  await saveUser(next);
-                } catch (err) {
-                  console.error("Failed toggling user status", err);
-                }
-              }}
-            />
+            {loading ? (
+              <div className="flex justify-center py-12 sm:py-16">
+                <LoadingSpinner label="Loading users..." subtle />
+              </div>
+            ) : (
+              <UserDirectoryTable
+                rows={filteredUsers}
+                loading={loading}
+                onEdit={onEdit}
+                onToggleSuspend={async (u) => {
+                  // toggle status and save
+                  const next = {
+                    ...u,
+                    status: u.status === "active" ? "suspended" : "active",
+                  };
+                  try {
+                    await saveUser(next);
+                  } catch (err) {
+                    console.error("Failed toggling user status", err);
+                  }
+                }}
+              />
+            )}
           </div>
 
           {/* Pagination */}

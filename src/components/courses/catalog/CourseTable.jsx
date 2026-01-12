@@ -2,13 +2,13 @@ import React from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 
 const truncate = (t, n = 120) =>
-  t && t.length > n ? t.slice(0, n - 1) + "…" : t || "—";
+  t && t.length > n ? `${t.slice(0, n - 1)}...` : t || "-";
 
-export default function CourseTable({ courses = [], onEdit }) {
+export default function CourseTable({ courses = [], onEdit, onView }) {
   const { colors } = useTheme();
   const rows = Array.isArray(courses) ? courses : [];
 
-  const formatCategory = (c) => c || "—";
+  const formatCategory = (c) => c || "-";
 
   return (
     <div className="space-y-3">
@@ -21,7 +21,7 @@ export default function CourseTable({ courses = [], onEdit }) {
         }}
       >
         <table
-          className="min-w-[720px] w-full text-sm"
+          className="min-w-[820px] w-full text-sm"
           style={{
             borderCollapse: "separate",
             borderSpacing: 0,
@@ -35,6 +35,7 @@ export default function CourseTable({ courses = [], onEdit }) {
                 borderBottom: `1px solid ${colors.ring}`,
               }}
             >
+              <th className="px-4 py-3 text-left">Thumbnail</th>
               <th className="px-4 py-3 text-left">Name</th>
               <th className="px-4 py-3 text-left">Category</th>
               <th className="px-4 py-3 text-left">Description</th>
@@ -46,7 +47,7 @@ export default function CourseTable({ courses = [], onEdit }) {
             {rows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-4 py-10 text-center"
                   style={{ color: colors.text2 }}
                 >
@@ -56,6 +57,25 @@ export default function CourseTable({ courses = [], onEdit }) {
             ) : (
               rows.map((r) => (
                 <tr key={r.id} style={{ backgroundColor: colors.bg2 }}>
+                  <td
+                    className="px-4 py-3"
+                    style={{
+                      borderBottom: `1px solid ${colors.ring}`,
+                    }}
+                  >
+                    {r.thumbnail_url ? (
+                      <img
+                        src={r.thumbnail_url}
+                        alt={r.title || "Course thumbnail"}
+                        className="h-10 w-16 object-cover rounded-md"
+                      />
+                    ) : (
+                      <div
+                        className="h-10 w-16 rounded-md"
+                        style={{ backgroundColor: colors.bg }}
+                      />
+                    )}
+                  </td>
                   <td
                     className="px-4 py-3"
                     style={{
@@ -87,17 +107,30 @@ export default function CourseTable({ courses = [], onEdit }) {
                     className="px-4 py-3 text-right"
                     style={{ borderBottom: `1px solid ${colors.ring}` }}
                   >
-                    <button
-                      onClick={() => onEdit?.(r)}
-                      className="px-3 py-1.5 rounded-xl border text-xs"
-                      style={{
-                        borderColor: colors.ring,
-                        backgroundColor: colors.bg2,
-                        color: colors.text,
-                      }}
-                    >
-                      Edit
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => onView?.(r)}
+                        className="px-3 py-1.5 rounded-xl border text-xs"
+                        style={{
+                          borderColor: colors.ring,
+                          backgroundColor: colors.bg2,
+                          color: colors.text,
+                        }}
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => onEdit?.(r)}
+                        className="px-3 py-1.5 rounded-xl border text-xs"
+                        style={{
+                          borderColor: colors.ring,
+                          backgroundColor: colors.bg2,
+                          color: colors.text,
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -131,12 +164,21 @@ export default function CourseTable({ courses = [], onEdit }) {
               }}
             >
               <div className="flex items-start justify-between gap-3">
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600 }}>{r.title || r.name}</div>
-                  <div
-                    style={{ color: colors.text2, fontSize: 13, marginTop: 6 }}
-                  >
-                    {formatCategory(r.category)}
+                <div className="flex gap-3" style={{ minWidth: 0 }}>
+                  {r.thumbnail_url ? (
+                    <img
+                      src={r.thumbnail_url}
+                      alt={r.title || "Course thumbnail"}
+                      className="h-12 w-16 object-cover rounded-md flex-shrink-0"
+                    />
+                  ) : null}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600 }}>{r.title || r.name}</div>
+                    <div
+                      style={{ color: colors.text2, fontSize: 13, marginTop: 6 }}
+                    >
+                      {formatCategory(r.category)}
+                    </div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -150,7 +192,18 @@ export default function CourseTable({ courses = [], onEdit }) {
                 {truncate(r.description, 200)}
               </div>
 
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  onClick={() => onView?.(r)}
+                  className="px-3 py-1.5 rounded-xl border text-xs"
+                  style={{
+                    borderColor: colors.ring,
+                    backgroundColor: colors.bg2,
+                    color: colors.text,
+                  }}
+                >
+                  View
+                </button>
                 <button
                   onClick={() => onEdit?.(r)}
                   className="px-3 py-1.5 rounded-xl border text-xs"

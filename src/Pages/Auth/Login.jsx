@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
-import * as userService from "../../data/users.service";
+import * as userService from "../../services/users.service";
 import {
   MdEmail,
   MdLock,
@@ -9,6 +9,8 @@ import {
   MdVisibilityOff,
   MdCheckCircle,
 } from "react-icons/md";
+import toast from "react-hot-toast";
+import { supabase } from "../../lib/supabaseClient";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -61,35 +63,81 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
     if (loading) return;
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Please fix the highlighted errors.");
+      return;
+    }
 
     setLoading(true);
     setErrors((s) => ({ ...s, form: "" }));
 
     try {
-      let res;
-      if (typeof userService.login === "function") {
-        try {
-          res = await userService.login({ email, password: pwd });
-        } catch {
-          res = await userService.login(email, pwd);
-        }
-      } else if (typeof userService.authenticate === "function") {
-        res = await userService.authenticate({ email, password: pwd });
-      } 
+      // 1) Login with Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pwd,
+      });
 
-      
+      if (error) {
+        throw error;
+      }
 
-     
+      const user = data.user;
+      if (!user) {
+        throw new Error("No user returned from Supabase.");
+      }
 
+      // 2) Fetch role from your existing `users` table
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("id, full_name, role")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        throw new Error("Unable to load user profile.");
+      }
+
+      // 3) Check that user is system_admin
+      if (profile.role !== "system_admin") {
+        // Optional: sign out immediately so they can't use the session
+        await supabase.auth.signOut();
+        throw new Error("You do not have admin access to this panel.");
+      }
+
+      // 4) Optional: store basic info in localStorage if Remember me is on
+      if (remember) {
+        window.localStorage.setItem(
+          "motorsport-admin-auth",
+          JSON.stringify({
+            id: profile.id,
+            fullName: profile.full_name,
+            email,
+            role: profile.role,
+          })
+        );
+      }
+
+      toast.success("Signed in successfully.");
+
+      // 5) Go to dashboard
       navigate("/", { replace: true });
     } catch (err) {
       console.error("Login error:", err);
-      setErrors((s) => ({ ...s, form: err?.message || "Login failed. Please try again." }));
+      const message =
+        err?.message ||
+        "Login failed. Please check your email and password.";
+      setErrors((s) => ({
+        ...s,
+        form: message,
+      }));
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
+
 
   const inputBaseStyle = {
     backgroundColor: colors.bg,

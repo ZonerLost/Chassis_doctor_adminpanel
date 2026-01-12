@@ -11,12 +11,12 @@ import {
   Bar,
   Legend,
 } from "recharts";
-import KpiTiles from "../../components/dashboard/KpiTiles";
-import TrendsMini from "../../components/dashboard/TrendsMini";
-import ActivityFeed from "../../components/dashboard/ActivityFeed";
-import QuickActions from "../../components/dashboard/QuickActions";
-import SystemHealth from "../../components/dashboard/SystemHealth";
-import { useTheme } from "../../contexts/ThemeContext";
+import KpiTiles from "../components/dashboard/KpiTiles";
+import TrendsMini from "../components/dashboard/TrendsMini";
+import ActivityFeed from "../components/dashboard/ActivityFeed";
+import QuickActions from "../components/dashboard/QuickActions";
+import SystemHealth from "../components/dashboard/SystemHealth";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function MainDashboard() {
   const { colors, isDark } = useTheme();

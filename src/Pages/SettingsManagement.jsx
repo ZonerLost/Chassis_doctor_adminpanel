@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import SystemSettings from "./SystemSettings.jsx";
-import SupportMediaSettingsPage from "./Auth/SupportMediaSettingsPage.jsx";
+import SupportMediaSettingsPage from "./SupportMediaSettingsPage.jsx";
 import SettingsPanel from "../components/support/SettingsPanel.jsx";
 
 export default function SettingsManagement() {

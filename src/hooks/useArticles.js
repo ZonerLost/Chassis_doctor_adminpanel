@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listArticles, upsertArticle } from "../data/knowledge.service";
+import { listArticles, upsertArticle } from "../services/knowledge.service";
 
 export function useArticles() {
   const [state, setState] = useState({

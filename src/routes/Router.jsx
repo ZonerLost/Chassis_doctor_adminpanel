@@ -1,10 +1,10 @@
 import React, { Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
-import MainDashboard from "../Pages/Auth/MainDashboard.jsx";
-import { useTheme } from "../contexts/ThemeContext";
+import MainDashboard from "../Pages/MainDashboard.jsx";
+import LoginPage from "../Pages/Auth/Login.jsx";
+import LoadingSpinner from "../components/ui/shared/LoadingSpinner.jsx";
 
-// Error boundary component
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -38,17 +38,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Loading component
-const LoadingSpinner = () => {
-  const { colors } = useTheme();
-  return (
-    <div className="flex items-center justify-center p-8" style={{ color: "inherit" }}>
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: colors.accent }} />
-      <span className="ml-3">Loading...</span>
-    </div>
-  );
-};
-
 // Generic fallback for lazy loading errors
 const FailedToLoad = ({ page }) => (
   <div style={{ padding: 12 }}>Failed to load {page} page</div>
@@ -73,11 +62,11 @@ const renderLazy = (LazyComp) => (
 
 // Register lazy pages
 const UsersManagement = lazyPage(
-  () => import("../Pages/Auth/UserManagement.jsx"),
+  () => import("../Pages/UserManagement.jsx"),
   "Users"
 );
 const ChassisDoctorManagement = lazyPage(
-  () => import("../Pages/Auth/ChassisDoctorManagement.jsx"),
+  () => import("../Pages/ChassisDoctorManagement.jsx"),
   "Chassis Doctor"
 );
 const CoursesManagement = lazyPage(
@@ -89,7 +78,7 @@ const KnowledgeManagement = lazyPage(
   "Knowledge"
 );
 const AnalyticsReporting = lazyPage(
-  () => import("../Pages/Auth/AnalyticsReporting.jsx"),
+  () => import("../Pages/AnalyticsReporting.jsx"),
   "Analytics"
 );
 const SettingsManagement = lazyPage(
@@ -97,11 +86,6 @@ const SettingsManagement = lazyPage(
   "Settings"
 );
 
-// Public pages
-const LoginPage = lazyPage(
-  () => import("../Pages/Auth/Login.jsx"),
-  "Login"
-);
 
 // Error UI for router (shown for 404 / route errors)
 const ErrorPage = ({ error }) => {
@@ -136,7 +120,7 @@ const ErrorPage = ({ error }) => {
 
 const Router = createBrowserRouter([
   // Public route: Login
-  { path: "/login", element: renderLazy(LoginPage) },
+  { path: "/login", element: <LoginPage /> },
   {
     path: "/",
     element: <DashboardLayout />,

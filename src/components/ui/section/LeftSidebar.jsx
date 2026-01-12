@@ -33,17 +33,17 @@ const menuItems = [
     color: "#D4AF37",
   },
   {
-    icon: MdBuild,
-    label: "Chassis Doctor",
-    path: "/chassis-doctor",
-    description: "Diagnostic System",
-    color: "#D4AF37",
-  },
-  {
     icon: MdLibraryBooks,
     label: "Courses",
     path: "/courses",
     description: "Media Library",
+    color: "#D4AF37",
+  },
+  {
+    icon: MdBuild,
+    label: "Chassis Doctor",
+    path: "/chassis-doctor",
+    description: "Diagnostic System",
     color: "#D4AF37",
   },
   {
@@ -189,8 +189,6 @@ export default function LeftSidebar({
               </span>
             </div>
           </div>
-
-     
 
           {/* Navigation Menu */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-2">

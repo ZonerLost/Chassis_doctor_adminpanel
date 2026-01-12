@@ -29,21 +29,22 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
   const validate = () => {
     const e = {};
     const email = String(form?.email || "").trim();
-    // require a gmail address
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // generic email validation
     if (!email) {
       e.email = "Email is required.";
-    } else if (!/^\S+@gmail\.com$/i.test(email)) {
-      e.email = "Enter a valid Gmail address (example@gmail.com).";
+    } else if (!emailRegex.test(email)) {
+      e.email = "Enter a valid email address.";
     }
 
     const purchased = Number(form?.purchasedCourses ?? 0);
-    if (!Number.isFinite(purchased) || purchased <= 0) {
-      e.purchasedCourses = "Courses must be a number greater than 0.";
+    if (!Number.isFinite(purchased) || purchased < 0) {
+      e.purchasedCourses = "Courses must be a number greater than or equal to 0.";
     }
 
     const chassis = Number(form?.chassisUses ?? 0);
-    if (!Number.isFinite(chassis) || chassis <= 0) {
-      e.chassisUses = "Chassis must be a number greater than 0.";
+    if (!Number.isFinite(chassis) || chassis < 0) {
+      e.chassisUses = "Chassis must be a number greater than or equal to 0.";
     }
 
     setErrors(e);

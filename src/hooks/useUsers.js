@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listUsers, updateUser, createUser } from "../data/users.service";
+import { listUsers, updateUser, createUser } from "../services/users.service";
 
 export function useUsers() {
   const [rows, setRows] = useState([]);
@@ -9,7 +9,10 @@ export function useUsers() {
     setLoading(true);
     try {
       const { data } = await listUsers(opts);
-      setRows(data);
+      setRows(data || []);
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      setRows([]);
     } finally {
       setLoading(false);
     }
