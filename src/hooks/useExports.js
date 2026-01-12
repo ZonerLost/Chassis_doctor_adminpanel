@@ -3,7 +3,7 @@ import {
   exportCSV,
   listSchedules,
   scheduleReport,
-} from "../data/analytics.service";
+} from "../services/analytics.service";
 
 export function useExports() {
   const [schedules, setSchedules] = useState([]);
