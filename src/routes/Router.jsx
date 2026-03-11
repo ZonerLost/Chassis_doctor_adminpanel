@@ -1,9 +1,14 @@
+/* eslint-disable no-unused-vars */
 import React, { Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import MainDashboard from "../Pages/MainDashboard.jsx";
 import LoginPage from "../Pages/Auth/Login.jsx";
+import ForgotPasswordPage from "../Pages/Auth/ForgotPassword.jsx";
+import ResetPasswordPage from "../Pages/Auth/ResetPassword.jsx";
 import LoadingSpinner from "../components/ui/shared/LoadingSpinner.jsx";
+import RequireAuth from "./RequireAuth.jsx";
+import PublicOnlyRoute from "./PublicOnlyRoute.jsx";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -38,13 +43,10 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Generic fallback for lazy loading errors
 const FailedToLoad = ({ page }) => (
   <div style={{ padding: 12 }}>Failed to load {page} page</div>
 );
 
-
-// DRY helpers for lazy pages and wrappers
 const lazyPage = (importer, page) =>
   React.lazy(() =>
     importer().catch(() => ({
@@ -60,7 +62,6 @@ const renderLazy = (LazyComp) => (
   </ErrorBoundary>
 );
 
-// Register lazy pages
 const UsersManagement = lazyPage(
   () => import("../Pages/UserManagement.jsx"),
   "Users"
@@ -86,8 +87,6 @@ const SettingsManagement = lazyPage(
   "Settings"
 );
 
-
-// Error UI for router (shown for 404 / route errors)
 const ErrorPage = ({ error }) => {
   return (
     <div className="p-8 text-center" style={{ color: "inherit" }}>
@@ -117,13 +116,34 @@ const ErrorPage = ({ error }) => {
   );
 };
 
-
 const Router = createBrowserRouter([
-  // Public route: Login
-  { path: "/login", element: <LoginPage /> },
+  {
+    path: "/login",
+    element: (
+      <PublicOnlyRoute>
+        <LoginPage />
+      </PublicOnlyRoute>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <PublicOnlyRoute>
+        <ForgotPasswordPage />
+      </PublicOnlyRoute>
+    ),
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
   {
     path: "/",
-    element: <DashboardLayout />,
+    element: (
+      <RequireAuth>
+        <DashboardLayout />
+      </RequireAuth>
+    ),
     errorElement: <ErrorPage />,
     children: [
       { index: true, element: <MainDashboard /> },
@@ -134,7 +154,10 @@ const Router = createBrowserRouter([
         ["knowledge", KnowledgeManagement],
         ["analytics", AnalyticsReporting],
         ["settings", SettingsManagement],
-      ].map(([path, Comp]) => ({ path, element: renderLazy(Comp) })),
+      ].map(([path, Comp]) => ({
+        path,
+        element: renderLazy(Comp),
+      })),
     ],
   },
 ]);

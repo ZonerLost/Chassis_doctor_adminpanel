@@ -10,10 +10,25 @@ const ConfirmModal = ({
   cancelLabel = "Cancel",
   confirmTone = "danger",
   loading = false,
+  loadingLabel = "Working...",
   onConfirm,
   onCancel,
 }) => {
   const { colors } = useTheme();
+  const titleId = React.useId();
+  const messageId = React.useId();
+
+  React.useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const confirmBg =
@@ -25,12 +40,18 @@ const ConfirmModal = ({
       <div className="absolute inset-0 bg-black/60" onClick={loading ? undefined : onCancel} />
       <div
         className="relative w-full max-w-md rounded-xl shadow-2xl border"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={message ? messageId : undefined}
         style={{ backgroundColor: colors.card, borderColor: colors.ring, color: colors.text }}
       >
         <div className="p-4 border-b" style={{ borderColor: colors.ring }}>
-          <div className="text-lg font-semibold">{title}</div>
+          <div id={titleId} className="text-lg font-semibold">
+            {title}
+          </div>
         </div>
-        <div className="p-4 text-sm" style={{ color: colors.text2 }}>
+        <div id={messageId} className="p-4 text-sm" style={{ color: colors.text2 }}>
           {message}
         </div>
         <div className="p-4 flex items-center justify-end gap-3 border-t" style={{ borderColor: colors.ring }}>
@@ -60,7 +81,7 @@ const ConfirmModal = ({
               boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
             }}
           >
-            {loading ? "Working..." : confirmLabel}
+            {loading ? loadingLabel : confirmLabel}
           </button>
         </div>
       </div>

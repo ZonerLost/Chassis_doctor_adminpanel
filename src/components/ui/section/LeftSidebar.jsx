@@ -6,16 +6,16 @@ import {
   MdLibraryBooks,
   MdMenuBook,
   MdAnalytics,
-  MdSupervisedUserCircle,
-  MdCampaign,
   MdSettings,
   MdLogout,
   MdKeyboardArrowRight,
   MdBuild,
   MdMenu,
-  MdClose,
 } from "react-icons/md";
+import toast from "react-hot-toast";
 import { useTheme } from "../../../contexts/ThemeContext";
+import ConfirmModal from "../shared/ConfirmModal";
+import { signOutAdmin } from "../../../services/auth.service";
 
 const menuItems = [
   {
@@ -78,6 +78,8 @@ export default function LeftSidebar({
   const navigate = useNavigate();
   const [logoLoaded, setLogoLoaded] = React.useState(false);
   const [logoError, setLogoError] = React.useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = React.useState(false);
+  const [logoutLoading, setLogoutLoading] = React.useState(false);
   // Support controlled mode (DashboardLayout passes isOpen/setIsOpen) or fall back to internal state
   const [localOpen, setLocalOpen] = React.useState(false);
   const isControlled =
@@ -85,18 +87,31 @@ export default function LeftSidebar({
   const isOpen = isControlled ? propIsOpen : localOpen;
   const setIsOpen = isControlled ? setPropIsOpen : setLocalOpen;
 
-  // added logout handler: clear auth and navigate to login
-  const handleLogout = (e) => {
-    e.preventDefault();
+  const openLogoutModal = () => {
+    if (logoutLoading) return;
+    setLogoutModalOpen(true);
+  };
+
+  const closeLogoutModal = () => {
+    if (logoutLoading) return;
+    setLogoutModalOpen(false);
+  };
+
+  const handleLogoutConfirm = async () => {
+    if (logoutLoading) return;
+
+    setLogoutLoading(true);
+
     try {
-      localStorage.removeItem("auth_token");
-      sessionStorage.removeItem("auth_token");
-      // remove any other auth/session keys you use
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("user");
-    } catch {
-      // ignore
+      await signOutAdmin();
+    } catch (error) {
+      console.error("Logout cleanup hit an error:", error);
+    } finally {
+      setLogoutModalOpen(false);
+      setLogoutLoading(false);
     }
+
+    toast.success("Logged out successfully");
     navigate("/login", { replace: true });
   };
 
@@ -251,7 +266,8 @@ export default function LeftSidebar({
           {/* Footer */}
           <div className="p-4 border-t" style={{ borderColor: colors.ring }}>
             <button
-              onClick={handleLogout}
+              type="button"
+              onClick={openLogoutModal}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors"
               style={{
                 backgroundColor: "rgba(239,68,68,0.06)", // light red background
@@ -265,6 +281,19 @@ export default function LeftSidebar({
           </div>
         </div>
       </aside>
+
+      <ConfirmModal
+        open={logoutModalOpen}
+        title="Logout?"
+        message="Are you sure you want to logout from your account?"
+        confirmLabel="Yes, Logout"
+        cancelLabel="Cancel"
+        confirmTone="danger"
+        loading={logoutLoading}
+        loadingLabel="Logging out..."
+        onCancel={closeLogoutModal}
+        onConfirm={handleLogoutConfirm}
+      />
     </>
   );
 }
