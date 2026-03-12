@@ -53,13 +53,13 @@ const menuItems = [
   //   description: "Articles & Categories",
   //   color: "#D4AF37",
   // },
-  // {
-  //   icon: MdAnalytics,
-  //   label: "Analytics",
-  //   path: "/analytics",
-  //   description: "Reporting & KPIs",
-  //   color: "#D4AF37",
-  // },
+  {
+    icon: MdAnalytics,
+    label: "Analytics",
+    path: "/analytics",
+    description: "Reporting & KPIs",
+    color: "#D4AF37",
+  },
   {
     icon: MdSettings,
     label: "Settings",

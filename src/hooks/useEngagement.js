@@ -1,24 +1,59 @@
-import { useEffect, useState, useCallback } from "react";
-import { getEngagement } from "../services/analytics.service";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import {
+  getDefaultDateRange,
+  getEngagementAnalytics,
+} from "../services/analytics.service";
 
 export function useEngagement() {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const defaultRange = getDefaultDateRange(14);
+
+  const [from, setFrom] = useState(defaultRange.from);
+  const [to, setTo] = useState(defaultRange.to);
+  const [kpis, setKpis] = useState([]);
   const [rows, setRows] = useState([]);
-  const [kpis, setKpis] = useState({});
-  const [loading, setLoading] = useState(false);
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { rows, kpis } = await getEngagement({ from, to });
-      setRows(rows);
-      setKpis(kpis);
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
+  const [exportRows, setExportRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
+    let ignore = false;
+
+    async function load() {
+      setLoading(true);
+
+      try {
+        const result = await getEngagementAnalytics({ from, to });
+        if (ignore) return;
+
+        setKpis(result.kpis || []);
+        setRows(result.rows || []);
+        setExportRows(result.exportRows || []);
+      } catch (error) {
+        if (!ignore) {
+          toast.error(error.message || "Failed to load engagement analytics");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
     load();
-  }, [from, to, load]);
-  return { from, to, setFrom, setTo, rows, kpis, loading, reload: load };
+
+    return () => {
+      ignore = true;
+    };
+  }, [from, to]);
+
+  return {
+    from,
+    to,
+    setFrom,
+    setTo,
+    kpis,
+    rows,
+    exportRows,
+    loading,
+  };
 }

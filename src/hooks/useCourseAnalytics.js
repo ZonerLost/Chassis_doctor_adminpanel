@@ -1,28 +1,48 @@
-import { useEffect, useState, useCallback } from "react";
-import { getCourseStats, listCoursesLookup } from "../services/analytics.service";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { getCourseAnalytics } from "../services/analytics.service";
 
 export function useCourseAnalytics() {
-  const [courseId, setCourseId] = useState("");
   const [rows, setRows] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { rows } = await getCourseStats({
-        courseId: courseId || undefined,
-      });
-      setRows(rows);
-    } finally {
-      setLoading(false);
+  const [summary, setSummary] = useState([]);
+  const [exportRows, setExportRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function load() {
+      setLoading(true);
+
+      try {
+        const result = await getCourseAnalytics();
+        if (ignore) return;
+
+        setRows(result.rows || []);
+        setSummary(result.summary || []);
+        setExportRows(result.exportRows || []);
+      } catch (error) {
+        if (!ignore) {
+          toast.error(error.message || "Failed to load course analytics");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
     }
-  }, [courseId]);
-  const loadCourses = async () => setCourses(await listCoursesLookup());
-  useEffect(() => {
+
     load();
-  }, [courseId, load]);
-  useEffect(() => {
-    loadCourses();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
-  return { courseId, setCourseId, rows, courses, loading, reload: load };
+
+  return {
+    rows,
+    summary,
+    exportRows,
+    loading,
+  };
 }

@@ -1,22 +1,59 @@
 import { useEffect, useState } from "react";
-import { getChassisStats } from "../services/analytics.service";
+import toast from "react-hot-toast";
+import { getChassisAnalytics } from "../services/analytics.service";
 
 export function useChassisAnalytics() {
   const [symptoms, setSymptoms] = useState([]);
   const [fixes, setFixes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { symptoms, fixes } = await getChassisStats();
-      setSymptoms(symptoms);
-      setFixes(fixes);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [summary, setSummary] = useState([]);
+  const [exportRows, setExportRows] = useState({
+    symptoms: [],
+    fixes: [],
+  });
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
+    let ignore = false;
+
+    async function load() {
+      setLoading(true);
+
+      try {
+        const result = await getChassisAnalytics();
+        if (ignore) return;
+
+        setSymptoms(result.symptoms || []);
+        setFixes(result.fixes || []);
+        setSummary(result.summary || []);
+        setExportRows(
+          result.exportRows || {
+            symptoms: [],
+            fixes: [],
+          }
+        );
+      } catch (error) {
+        if (!ignore) {
+          toast.error(error.message || "Failed to load chassis analytics");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
     load();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
-  return { symptoms, fixes, loading, reload: load };
+
+  return {
+    symptoms,
+    fixes,
+    summary,
+    exportRows,
+    loading,
+  };
 }
