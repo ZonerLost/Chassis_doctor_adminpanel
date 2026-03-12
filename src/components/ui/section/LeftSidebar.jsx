@@ -46,20 +46,20 @@ const menuItems = [
     description: "Diagnostic System",
     color: "#D4AF37",
   },
-  {
-    icon: MdMenuBook,
-    label: "Knowledge",
-    path: "/knowledge",
-    description: "Articles & Categories",
-    color: "#D4AF37",
-  },
-  {
-    icon: MdAnalytics,
-    label: "Analytics",
-    path: "/analytics",
-    description: "Reporting & KPIs",
-    color: "#D4AF37",
-  },
+  // {
+  //   icon: MdMenuBook,
+  //   label: "Knowledge",
+  //   path: "/knowledge",
+  //   description: "Articles & Categories",
+  //   color: "#D4AF37",
+  // },
+  // {
+  //   icon: MdAnalytics,
+  //   label: "Analytics",
+  //   path: "/analytics",
+  //   description: "Reporting & KPIs",
+  //   color: "#D4AF37",
+  // },
   {
     icon: MdSettings,
     label: "Settings",
@@ -80,7 +80,6 @@ export default function LeftSidebar({
   const [logoError, setLogoError] = React.useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = React.useState(false);
   const [logoutLoading, setLogoutLoading] = React.useState(false);
-  // Support controlled mode (DashboardLayout passes isOpen/setIsOpen) or fall back to internal state
   const [localOpen, setLocalOpen] = React.useState(false);
   const isControlled =
     typeof propIsOpen === "boolean" && typeof setPropIsOpen === "function";
