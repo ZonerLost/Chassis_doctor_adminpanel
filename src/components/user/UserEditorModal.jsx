@@ -6,6 +6,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 const emptyForm = {
   fullName: "",
   email: "",
+  role: "parent",
   status: "active",
   phone: "",
   location: "",
@@ -24,6 +25,7 @@ function buildInitialForm(user) {
     id: user.id,
     fullName: user.fullName || "",
     email: user.email || "",
+    role: user.role || "parent",
     status: user.status || "active",
     phone: user.phone || "",
     location: user.location || "",

@@ -10,6 +10,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useUsers } from "../hooks/useUsers";
 
 const PAGE_SIZE_OPTIONS = [15, 50, 100];
+const DEFAULT_NEW_USER_ROLE = "parent";
 
 const UserManagement = () => {
   const { colors, isDark } = useTheme();
@@ -56,15 +57,27 @@ const UserManagement = () => {
   };
 
   const handleSave = async (form) => {
+    const isCreate = !form?.id;
+    const normalizedForm = isCreate
+      ? { ...form, role: DEFAULT_NEW_USER_ROLE }
+      : { ...form, role: undefined };
+
     try {
-      await save(form);
+      await save(normalizedForm);
       toast.success(
-        form?.id ? "User updated successfully." : "User created successfully."
+        isCreate ? "User added successfully." : "User updated successfully."
       );
       setOpen(false);
     } catch (error) {
-      console.error("Failed to save user:", error);
-      toast.error(error?.message || "Could not save user.");
+      console.error(
+        isCreate ? "Failed to create user:" : "Failed to update user:",
+        error
+      );
+      toast.error(
+        isCreate
+          ? "Could not add user. Please try again."
+          : "Could not update user. Please try again."
+      );
     }
   };
 

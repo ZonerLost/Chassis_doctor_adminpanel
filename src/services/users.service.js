@@ -2,6 +2,8 @@ import { supabase } from "../lib/supabaseClient";
 
 const USER_AVATAR_BUCKET =
   import.meta.env.VITE_SUPABASE_USER_AVATAR_BUCKET || "user-avatars";
+const DEFAULT_NEW_USER_ROLE = "parent";
+const EXCLUDED_USER_ROLE = "system_admin";
 
 const USER_SELECT = [
   "id",
@@ -56,6 +58,7 @@ function mapUserRow(row = {}) {
 }
 
 function buildUserPayload(payload = {}, { isUpdate = false } = {}) {
+  const normalizedRole = trimToNull(payload.role);
   const nextPayload = {
     full_name: trimToNull(payload.fullName),
     email: trimToNull(payload.email),
@@ -66,9 +69,9 @@ function buildUserPayload(payload = {}, { isUpdate = false } = {}) {
   };
 
   if (!isUpdate) {
-    nextPayload.role = trimToNull(payload.role) || "driver";
-  } else if (typeof payload.role !== "undefined") {
-    nextPayload.role = trimToNull(payload.role);
+    nextPayload.role = normalizedRole || DEFAULT_NEW_USER_ROLE;
+  } else if (normalizedRole) {
+    nextPayload.role = normalizedRole;
   }
 
   if (!payload.avatarFile && typeof payload.avatarUrl !== "undefined") {
@@ -135,7 +138,7 @@ export async function listUsers({
   let request = supabase
     .from("users")
     .select(USER_SELECT, { count: "exact" })
-    .neq("role", "system_admin")
+    .neq("role", EXCLUDED_USER_ROLE)
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -164,7 +167,11 @@ export async function listUsers({
 }
 
 export async function createUser(payload) {
-  const dbPayload = buildUserPayload(payload);
+  const normalizedPayload = {
+    ...payload,
+    role: DEFAULT_NEW_USER_ROLE,
+  };
+  const dbPayload = buildUserPayload(normalizedPayload);
 
   const { data, error } = await supabase
     .from("users")
@@ -176,8 +183,8 @@ export async function createUser(payload) {
 
   let nextRow = data;
 
-  if (payload?.avatarFile) {
-    const avatarUrl = await uploadUserAvatar(data.id, payload.avatarFile);
+  if (normalizedPayload?.avatarFile) {
+    const avatarUrl = await uploadUserAvatar(data.id, normalizedPayload.avatarFile);
     nextRow = await updateUserAvatarUrl(data.id, avatarUrl);
   }
 

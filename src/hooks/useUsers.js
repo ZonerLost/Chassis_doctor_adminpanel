@@ -7,6 +7,7 @@ import {
 } from "../services/users.service";
 
 const DEFAULT_PAGE_SIZE = 15;
+const DEFAULT_NEW_USER_ROLE = "parent";
 
 export function useUsers() {
   const [rows, setRows] = useState([]);
@@ -78,7 +79,7 @@ export function useUsers() {
 
   const save = async (user) => {
     if (!user?.id) {
-      await createUser(user);
+      await createUser({ ...user, role: DEFAULT_NEW_USER_ROLE });
       if (page !== 1) {
         setPage(1);
       }
