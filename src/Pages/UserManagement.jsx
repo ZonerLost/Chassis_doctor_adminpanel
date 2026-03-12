@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { MdPersonAdd } from "react-icons/md";
 import SearchInput from "../components/ui/common/SearchInput";
 import SectionCard from "../components/ui/common/SectionCard";
+import ConfirmModal from "../components/ui/shared/ConfirmModal";
 import LoadingSpinner from "../components/ui/shared/LoadingSpinner.jsx";
 import UserDirectoryTable from "../components/user/UserDirectoryTable";
 import UserEditorModal from "../components/user/UserEditorModal";
@@ -12,10 +13,16 @@ import { useUsers } from "../hooks/useUsers";
 const PAGE_SIZE_OPTIONS = [15, 50, 100];
 const DEFAULT_NEW_USER_ROLE = "parent";
 
+const getUserDisplayName = (user) =>
+  user?.fullName?.trim() || user?.email?.trim() || "this user";
+
 const UserManagement = () => {
   const { colors, isDark } = useTheme();
-  const [selected, setSelected] = useState(null);
-  const [open, setOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     rows,
@@ -47,13 +54,27 @@ const UserManagement = () => {
   );
 
   const openCreate = () => {
-    setSelected(null);
-    setOpen(true);
+    setEditingUser(null);
+    setEditorOpen(true);
   };
 
   const openEdit = (user) => {
-    setSelected(user);
-    setOpen(true);
+    setEditingUser(user);
+    setEditorOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeleting) return;
+
+    setDeleteModalOpen(false);
+    setSelectedUser(null);
+  };
+
+  const openDeleteModal = (user) => {
+    if (!user || isDeleting) return;
+
+    setSelectedUser(user);
+    setDeleteModalOpen(true);
   };
 
   const handleSave = async (form) => {
@@ -67,7 +88,7 @@ const UserManagement = () => {
       toast.success(
         isCreate ? "User added successfully." : "User updated successfully."
       );
-      setOpen(false);
+      setEditorOpen(false);
     } catch (error) {
       console.error(
         isCreate ? "Failed to create user:" : "Failed to update user:",
@@ -81,19 +102,21 @@ const UserManagement = () => {
     }
   };
 
-  const handleDelete = async (user) => {
-    const confirmed = window.confirm(
-      `Delete ${user?.fullName || user?.email || "this user"}?`
-    );
+  const handleDelete = async () => {
+    if (!selectedUser?.id || isDeleting) return;
 
-    if (!confirmed) return;
+    setIsDeleting(true);
 
     try {
-      await remove(user.id);
-      toast.success("User deleted successfully.");
+      await remove(selectedUser.id);
+      toast.success("User deleted successfully");
+      setDeleteModalOpen(false);
+      setSelectedUser(null);
     } catch (error) {
       console.error("Failed to delete user:", error);
-      toast.error(error?.message || "Could not delete user.");
+      toast.error(error?.message || "Failed to delete user");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -200,7 +223,7 @@ const UserManagement = () => {
               <UserDirectoryTable
                 rows={rows}
                 onEdit={openEdit}
-                onDelete={handleDelete}
+                onDelete={openDeleteModal}
               />
             )}
           </div>
@@ -248,14 +271,33 @@ const UserManagement = () => {
         </div>
       </SectionCard>
 
-      {open ? (
+      {editorOpen ? (
         <UserEditorModal
-          isOpen={open}
-          user={selected}
-          onClose={() => setOpen(false)}
+          isOpen={editorOpen}
+          user={editingUser}
+          onClose={() => setEditorOpen(false)}
           onSave={handleSave}
         />
       ) : null}
+
+      <ConfirmModal
+        open={deleteModalOpen}
+        title="Delete user"
+        description={
+          selectedUser
+            ? `Are you sure you want to delete ${getUserDisplayName(
+                selectedUser
+              )}? This action cannot be undone.`
+            : ""
+        }
+        confirmText="Delete User"
+        cancelText="Cancel"
+        loading={isDeleting}
+        loadingLabel="Deleting..."
+        variant="danger"
+        onCancel={closeDeleteModal}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };
