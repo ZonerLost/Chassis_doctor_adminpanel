@@ -2,6 +2,7 @@ export const AUTH_PROFILE_STORAGE_KEY = "motorsport-admin-auth";
 export const AUTH_REMEMBER_EMAIL_KEY = "motorsport-admin-remember-email";
 export const SUPABASE_AUTH_STORAGE_KEY = "motorsport-admin-supabase-auth";
 export const ADMIN_PROFILE_STORAGE_KEY = "admin_profile";
+export const ADMIN_PROFILE_UPDATED_EVENT = "motorsport-admin-profile-updated";
 export const ADMIN_ROLES = ["system_admin", "admin"];
 const LEGACY_AUTH_STORAGE_KEYS = ["auth_token", "user"];
 
@@ -17,20 +18,55 @@ function safeJsonParse(value) {
   }
 }
 
+function normaliseStoredAdmin(admin) {
+  if (!admin || typeof admin !== "object") return null;
+
+  return {
+    id: admin.id || "",
+    email: admin.email || "",
+    fullName: admin.fullName || admin.name || "",
+    avatarUrl: admin.avatarUrl || admin.avatar || "",
+    role: admin.role || "",
+    status: admin.status || "",
+  };
+}
+
+function dispatchAdminProfileUpdate(admin) {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent(ADMIN_PROFILE_UPDATED_EVENT, {
+      detail: admin || null,
+    })
+  );
+}
+
 export function getStoredAdmin() {
   if (typeof window === "undefined") return null;
   const raw = window.localStorage.getItem(AUTH_PROFILE_STORAGE_KEY);
-  return raw ? safeJsonParse(raw) : null;
+  return raw ? normaliseStoredAdmin(safeJsonParse(raw)) : null;
 }
 
 export function setStoredAdmin(admin) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(AUTH_PROFILE_STORAGE_KEY, JSON.stringify(admin));
+
+  const current = getStoredAdmin() || {};
+  const nextAdmin = normaliseStoredAdmin({
+    ...current,
+    ...admin,
+  });
+
+  window.localStorage.setItem(
+    AUTH_PROFILE_STORAGE_KEY,
+    JSON.stringify(nextAdmin)
+  );
+  dispatchAdminProfileUpdate(nextAdmin);
 }
 
 export function clearStoredAdmin() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(AUTH_PROFILE_STORAGE_KEY);
+  dispatchAdminProfileUpdate(null);
 }
 
 function removeKeyFromBrowserStorage(key) {

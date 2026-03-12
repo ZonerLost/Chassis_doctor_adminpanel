@@ -1,10 +1,49 @@
 import { supabase } from "../lib/supabaseClient";
 
-/* -------------------- COURSES (Supabase) -------------------- */
+/* -------------------- helpers -------------------- */
+
+const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024; // 200MB
+const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+const normalizeLevel = (value) => {
+  if (!value) return null;
+  const normalized = String(value).trim().toLowerCase();
+  if (["beginner", "intermediate", "advanced"].includes(normalized)) {
+    return normalized;
+  }
+  return normalized;
+};
+
+const mapCoursePayload = (course = {}) => ({
+  title: course.title || course.name || "",
+  category: course.category || null,
+  description: course.description || null,
+  level: normalizeLevel(course.level || course.difficulty_level),
+  duration_minutes:
+    course.duration_minutes != null
+      ? Number(course.duration_minutes)
+      : course.total_minutes != null
+        ? Number(course.total_minutes)
+        : null,
+  thumbnail_url: course.thumbnail_url || null,
+  is_published:
+    typeof course.is_published === "boolean" ? course.is_published : false,
+});
+
+async function safeRemoveStorageFile(bucket, path) {
+  if (!path) return;
+  try {
+    await supabase.storage.from(bucket).remove([path]);
+  } catch (err) {
+    console.warn(`Failed to remove old file from ${bucket}:`, err);
+  }
+}
+
+/* -------------------- COURSES -------------------- */
 
 export async function listCourses(params = {}) {
-  const page = params.page ?? 1;
-  const pageSize = params.pageSize ?? 20;
+  const page = Number(params.page ?? 1);
+  const pageSize = Number(params.pageSize ?? 15);
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -20,9 +59,11 @@ export async function listCourses(params = {}) {
   if (params.query) {
     query = query.ilike("title", `%${params.query}%`);
   }
+
   if (params.level && params.level !== "all") {
-    query = query.eq("level", params.level);
+    query = query.eq("level", normalizeLevel(params.level));
   }
+
   if (params.access && params.access !== "all") {
     if (params.access === "published") query = query.eq("is_published", true);
     if (params.access === "draft") query = query.eq("is_published", false);
@@ -51,39 +92,8 @@ export async function getCourseById(id) {
   return { success: true, data };
 }
 
-export async function listLessonsForCourse(courseId) {
-  const { data, error } = await supabase
-    .from("course_lessons")
-    .select("id, title, order_index, video_path, duration_seconds, created_at")
-    .eq("course_id", courseId)
-    .order("order_index", { ascending: true });
-
-  if (error) throw error;
-  return { success: true, data: data || [] };
-}
-
-export async function getLessonVideoUrl(videoPath) {
-  if (!videoPath) return null;
-  const { data } = supabase.storage.from("course-videos").getPublicUrl(videoPath);
-  return data?.publicUrl || null;
-}
-
 export async function createCourse(course) {
-  const payload = {
-    title: course.title || course.name,
-    category: course.category || null,
-    description: course.description || null,
-    level: course.level || course.difficulty_level || null,
-    duration_minutes:
-      course.duration_minutes != null
-        ? Number(course.duration_minutes)
-        : course.total_minutes != null
-          ? Number(course.total_minutes)
-          : null,
-    thumbnail_url: course.thumbnail_url || null,
-    is_published:
-      typeof course.is_published === "boolean" ? course.is_published : false,
-  };
+  const payload = mapCoursePayload(course);
 
   const { data, error } = await supabase
     .from("courses")
@@ -96,21 +106,7 @@ export async function createCourse(course) {
 }
 
 export async function updateCourse(id, course) {
-  const payload = {
-    title: course.title || course.name,
-    category: course.category || null,
-    description: course.description || null,
-    level: course.level || course.difficulty_level || null,
-    duration_minutes:
-      course.duration_minutes != null
-        ? Number(course.duration_minutes)
-        : course.total_minutes != null
-          ? Number(course.total_minutes)
-          : null,
-    thumbnail_url: course.thumbnail_url || null,
-    is_published:
-      typeof course.is_published === "boolean" ? course.is_published : false,
-  };
+  const payload = mapCoursePayload(course);
 
   const { data, error } = await supabase
     .from("courses")
@@ -129,18 +125,32 @@ export async function deleteCourse(id) {
   return { success: true };
 }
 
-/* -------------------- VIDEO UPLOAD + LESSON -------------------- */
+/* -------------------- LESSONS -------------------- */
 
-// simple size-limit; real compression should be done on backend/worker
-const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB
+export async function listLessonsForCourse(courseId) {
+  const { data, error } = await supabase
+    .from("course_lessons")
+    .select("id, title, order_index, video_path, duration_seconds, created_at")
+    .eq("course_id", courseId)
+    .order("order_index", { ascending: true });
+
+  if (error) throw error;
+  return { success: true, data: data || [] };
+}
+
+export async function getLessonVideoUrl(videoPath) {
+  if (!videoPath) return null;
+  const { data } = supabase.storage.from("course-videos").getPublicUrl(videoPath);
+  return data?.publicUrl || null;
+}
+
+/* -------------------- VIDEO UPLOAD -------------------- */
 
 export async function uploadCourseVideo(courseId, file) {
   if (!file) return null;
 
   if (file.size > MAX_VIDEO_SIZE_BYTES) {
-    throw new Error(
-      "Video too large. Please upload a file under 200 MB (for heavier compression, handle it on the backend)."
-    );
+    throw new Error("Video too large. Please upload a file under 200 MB.");
   }
 
   const safeName = file.name.replace(/\s+/g, "-").toLowerCase();
@@ -156,7 +166,7 @@ export async function uploadCourseVideo(courseId, file) {
 
   const { data } = supabase.storage.from("course-videos").getPublicUrl(filePath);
 
-  return { path: filePath, publicUrl: data.publicUrl };
+  return { path: filePath, publicUrl: data?.publicUrl || null };
 }
 
 export async function createLessonForCourse(
@@ -183,14 +193,85 @@ export async function createLessonForCourse(
   if (error) throw error;
   return { success: true, data };
 }
+
+export async function upsertFirstLessonForCourse(
+  courseId,
+  { title, duration_seconds },
+  videoFile
+) {
+  if (!courseId) {
+    throw new Error("Course id is required.");
+  }
+
+  let uploadRes = null;
+  if (videoFile) {
+    uploadRes = await uploadCourseVideo(courseId, videoFile);
+  }
+
+  const { data: existingLesson, error: existingError } = await supabase
+    .from("course_lessons")
+    .select("id, video_path")
+    .eq("course_id", courseId)
+    .eq("order_index", 1)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+
+  const lessonPayload = {
+    title: title || "Lesson 1",
+    duration_seconds:
+      typeof duration_seconds === "number" ? duration_seconds : null,
+  };
+
+  if (uploadRes?.path) {
+    lessonPayload.video_path = uploadRes.path;
+  }
+
+  if (existingLesson?.id) {
+    const { data, error } = await supabase
+      .from("course_lessons")
+      .update(lessonPayload)
+      .eq("id", existingLesson.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (
+      existingLesson.video_path &&
+      uploadRes?.path &&
+      existingLesson.video_path !== uploadRes.path
+    ) {
+      await safeRemoveStorageFile("course-videos", existingLesson.video_path);
+    }
+
+    return { success: true, data };
+  }
+
+  const { data, error } = await supabase
+    .from("course_lessons")
+    .insert({
+      course_id: courseId,
+      order_index: 1,
+      title: lessonPayload.title,
+      duration_seconds: lessonPayload.duration_seconds,
+      video_path: uploadRes?.path || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return { success: true, data };
+}
+
 /* -------------------- THUMBNAIL UPLOAD -------------------- */
 
-// Thumbnail upload (PNG/JPG) for courses
 export async function uploadCourseThumbnail(file) {
   if (!file) return null;
 
-  const maxSizeBytes = 10 * 1024 * 1024; // 10MB
-  if (file.size > maxSizeBytes) {
+  if (file.size > MAX_THUMBNAIL_SIZE_BYTES) {
     throw new Error("Thumbnail too large. Please upload an image under 10 MB.");
   }
 
@@ -206,7 +287,5 @@ export async function uploadCourseThumbnail(file) {
   if (error) throw error;
 
   const { data } = supabase.storage.from("course-thumbnails").getPublicUrl(filePath);
-
-  // data.publicUrl is what you store in courses.thumbnail_url
-  return { path: filePath, publicUrl: data.publicUrl };
+  return { path: filePath, publicUrl: data?.publicUrl || null };
 }

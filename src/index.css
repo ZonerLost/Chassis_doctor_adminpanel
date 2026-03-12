@@ -36,6 +36,33 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.modal-panel {
+  min-height: 0;
+}
+
+.modal-scroll-area,
+.modal-contained-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.modal-scroll-area {
+  flex: 1 1 auto;
+}
+
+.modal-scroll-area::-webkit-scrollbar-thumb,
+.modal-contained-scroll::-webkit-scrollbar-thumb {
+  background: rgba(163, 167, 183, 0.4);
+}
+
+.modal-scroll-area::-webkit-scrollbar-thumb:hover,
+.modal-contained-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 167, 183, 0.58);
+}
+
 /* Headings */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);

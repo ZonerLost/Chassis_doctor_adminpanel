@@ -1,27 +1,35 @@
 import React from "react";
+import { MdEdit, MdOutlineVisibility } from "react-icons/md";
 import { useTheme } from "../../../contexts/ThemeContext";
 
-const truncate = (t, n = 120) =>
-  t && t.length > n ? `${t.slice(0, n - 1)}...` : t || "-";
+const truncate = (text, length = 120) =>
+  text && text.length > length ? `${text.slice(0, length - 1)}…` : text || "-";
+
+const formatDurationMinutes = (minutes) => {
+  if (minutes == null || Number.isNaN(Number(minutes))) return "-";
+  const total = Math.max(0, Number(minutes));
+  const hours = Math.floor(total / 60);
+  const mins = total % 60;
+  if (hours && mins) return `${hours}h ${mins}m`;
+  if (hours) return `${hours}h`;
+  return `${mins}m`;
+};
+
+const formatLevel = (value) => {
+  if (!value) return "-";
+  const text = String(value).toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
 
 export default function CourseTable({ courses = [], onEdit, onView }) {
   const { colors } = useTheme();
   const rows = Array.isArray(courses) ? courses : [];
 
-  const formatCategory = (c) => c || "-";
-
   return (
-    <div className="space-y-3">
-      {/* Desktop / tablet: table (hidden on small screens) */}
-      <div
-        className="hidden md:block overflow-x-auto rounded-lg"
-        style={{
-          border: `1px solid ${colors.ring}`,
-          backgroundColor: colors.bg2,
-        }}
-      >
+    <div className="space-y-4">
+      <div className="hidden md:block overflow-x-auto">
         <table
-          className="min-w-[820px] w-full text-sm"
+          className="min-w-[980px] w-full text-sm"
           style={{
             borderCollapse: "separate",
             borderSpacing: 0,
@@ -29,17 +37,37 @@ export default function CourseTable({ courses = [], onEdit, onView }) {
           }}
         >
           <thead>
-            <tr
-              style={{
-                color: "#d4af37",
-                borderBottom: `1px solid ${colors.ring}`,
-              }}
-            >
-              <th className="px-4 py-3 text-left">Thumbnail</th>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Category</th>
-              <th className="px-4 py-3 text-left">Description</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+            <tr style={{ borderBottom: `1px solid ${colors.ring}` }}>
+              <th
+                className="px-4 py-4 text-left text-sm font-semibold"
+                style={{ color: colors.accent }}
+              >
+                Thumbnail
+              </th>
+              <th
+                className="px-4 py-4 text-left text-sm font-semibold"
+                style={{ color: colors.accent }}
+              >
+                Name
+              </th>
+              <th
+                className="px-4 py-4 text-left text-sm font-semibold"
+                style={{ color: colors.accent }}
+              >
+                Category
+              </th>
+              <th
+                className="px-4 py-4 text-left text-sm font-semibold"
+                style={{ color: colors.accent }}
+              >
+                Description
+              </th>
+              <th
+                className="px-4 py-4 text-right text-sm font-semibold"
+                style={{ color: colors.accent }}
+              >
+                Actions
+              </th>
             </tr>
           </thead>
 
@@ -48,86 +76,133 @@ export default function CourseTable({ courses = [], onEdit, onView }) {
               <tr>
                 <td
                   colSpan={5}
-                  className="px-4 py-10 text-center"
-                  style={{ color: colors.text2 }}
+                  className="px-4 py-12 text-center"
+                  style={{
+                    color: colors.text2,
+                    borderTop: `1px solid ${colors.ring}`,
+                  }}
                 >
-                  No courses
+                  No courses found.
                 </td>
               </tr>
             ) : (
-              rows.map((r) => (
-                <tr key={r.id} style={{ backgroundColor: colors.bg2 }}>
+              rows.map((course) => (
+                <tr key={course.id}>
                   <td
-                    className="px-4 py-3"
-                    style={{
-                      borderBottom: `1px solid ${colors.ring}`,
-                    }}
+                    className="px-4 py-4 align-top"
+                    style={{ borderTop: `1px solid ${colors.ring}` }}
                   >
-                    {r.thumbnail_url ? (
+                    {course.thumbnail_url ? (
                       <img
-                        src={r.thumbnail_url}
-                        alt={r.title || "Course thumbnail"}
-                        className="h-10 w-16 object-cover rounded-md"
+                        src={course.thumbnail_url}
+                        alt={course.title || "Course thumbnail"}
+                        className="h-14 w-24 rounded-xl object-cover"
                       />
                     ) : (
                       <div
-                        className="h-10 w-16 rounded-md"
-                        style={{ backgroundColor: colors.bg }}
+                        className="h-14 w-24 rounded-xl"
+                        style={{ backgroundColor: colors.card || colors.bg }}
                       />
                     )}
                   </td>
+
                   <td
-                    className="px-4 py-3"
-                    style={{
-                      color: colors.text,
-                      borderBottom: `1px solid ${colors.ring}`,
-                    }}
+                    className="px-4 py-4 align-top"
+                    style={{ borderTop: `1px solid ${colors.ring}` }}
                   >
-                    {r.title || r.name}
+                    <div className="font-semibold text-[15px]">
+                      {course.title || course.name || "-"}
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span
+                        className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+                        style={{
+                          backgroundColor: `${colors.accent}18`,
+                          color: colors.accent,
+                          border: `1px solid ${colors.ring}`,
+                        }}
+                      >
+                        {formatLevel(course.level)}
+                      </span>
+
+                      <span
+                        className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+                        style={{
+                          backgroundColor: colors.card || colors.bg,
+                          color: colors.text2,
+                          border: `1px solid ${colors.ring}`,
+                        }}
+                      >
+                        {formatDurationMinutes(course.duration_minutes)}
+                      </span>
+
+                      <span
+                        className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+                        style={{
+                          backgroundColor: course.is_published
+                            ? `${colors.ok || "#22c55e"}18`
+                            : colors.card || colors.bg,
+                          color: course.is_published
+                            ? colors.ok || "#22c55e"
+                            : colors.text2,
+                          border: `1px solid ${colors.ring}`,
+                        }}
+                      >
+                        {course.is_published ? "Published" : "Draft"}
+                      </span>
+                    </div>
                   </td>
+
                   <td
-                    className="px-4 py-3"
+                    className="px-4 py-4 align-top"
                     style={{
                       color: colors.text2,
-                      borderBottom: `1px solid ${colors.ring}`,
+                      borderTop: `1px solid ${colors.ring}`,
                     }}
                   >
-                    {formatCategory(r.category)}
+                    {course.category || "-"}
                   </td>
+
                   <td
-                    className="px-4 py-3"
+                    className="px-4 py-4 align-top"
                     style={{
                       color: colors.text2,
-                      borderBottom: `1px solid ${colors.ring}`,
+                      borderTop: `1px solid ${colors.ring}`,
+                      maxWidth: 360,
                     }}
                   >
-                    {truncate(r.description)}
+                    {truncate(course.description, 130)}
                   </td>
+
                   <td
-                    className="px-4 py-3 text-right"
-                    style={{ borderBottom: `1px solid ${colors.ring}` }}
+                    className="px-4 py-4 align-top text-right"
+                    style={{ borderTop: `1px solid ${colors.ring}` }}
                   >
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => onView?.(r)}
-                        className="px-3 py-1.5 rounded-xl border text-xs"
+                        onClick={() => onView?.(course)}
+                        className="px-3 py-2 rounded-xl text-xs font-medium inline-flex items-center gap-1.5"
                         style={{
-                          borderColor: colors.ring,
-                          backgroundColor: colors.bg2,
+                          border: `1px solid ${colors.ring}`,
+                          backgroundColor: colors.card || colors.bg,
                           color: colors.text,
                         }}
                       >
+                        <MdOutlineVisibility size={15} />
                         View
                       </button>
+
                       <button
-                        onClick={() => onEdit?.(r)}
-                        className="px-3 py-1.5 rounded-xl border text-xs"
+                        onClick={() => onEdit?.(course)}
+                        className="px-3 py-2 rounded-xl text-xs font-medium inline-flex items-center gap-1.5"
                         style={{
-                          borderColor: colors.ring,
-                          backgroundColor: colors.bg2,
+                          border: `1px solid ${colors.ring}`,
+                          backgroundColor: colors.card || colors.bg,
                           color: colors.text,
                         }}
                       >
+                        <MdEdit size={15} />
                         Edit
                       </button>
                     </div>
@@ -139,80 +214,109 @@ export default function CourseTable({ courses = [], onEdit, onView }) {
         </table>
       </div>
 
-      {/* Mobile: stacked cards */}
       <div className="md:hidden space-y-3">
         {rows.length === 0 ? (
           <div
-            className="p-3 rounded-lg"
+            className="p-4 rounded-2xl text-sm"
             style={{
               backgroundColor: colors.bg2,
               border: `1px solid ${colors.ring}`,
               color: colors.text2,
             }}
           >
-            No courses
+            No courses found.
           </div>
         ) : (
-          rows.map((r) => (
+          rows.map((course) => (
             <div
-              key={r.id}
-              className="p-3 rounded-lg"
+              key={course.id}
+              className="rounded-2xl p-4"
               style={{
                 backgroundColor: colors.card || colors.bg2,
                 border: `1px solid ${colors.ring}`,
                 color: colors.text,
               }}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex gap-3" style={{ minWidth: 0 }}>
-                  {r.thumbnail_url ? (
-                    <img
-                      src={r.thumbnail_url}
-                      alt={r.title || "Course thumbnail"}
-                      className="h-12 w-16 object-cover rounded-md flex-shrink-0"
-                    />
-                  ) : null}
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600 }}>{r.title || r.name}</div>
-                    <div
-                      style={{ color: colors.text2, fontSize: 13, marginTop: 6 }}
+              <div className="flex gap-3">
+                {course.thumbnail_url ? (
+                  <img
+                    src={course.thumbnail_url}
+                    alt={course.title || "Course thumbnail"}
+                    className="h-16 w-20 rounded-xl object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="h-16 w-20 rounded-xl flex-shrink-0"
+                    style={{ backgroundColor: colors.bg2 }}
+                  />
+                )}
+
+                <div style={{ minWidth: 0 }} className="flex-1">
+                  <div className="font-semibold text-[15px] break-words">
+                    {course.title || course.name || "-"}
+                  </div>
+
+                  <div
+                    className="text-sm mt-1 break-words"
+                    style={{ color: colors.text2 }}
+                  >
+                    {course.category || "-"}
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+                      style={{
+                        backgroundColor: `${colors.accent}18`,
+                        color: colors.accent,
+                        border: `1px solid ${colors.ring}`,
+                      }}
                     >
-                      {formatCategory(r.category)}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ color: colors.text2, fontSize: 12 }}>
-                    {r.views ? `${r.views} views` : ""}
+                      {formatLevel(course.level)}
+                    </span>
+
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+                      style={{
+                        backgroundColor: colors.bg2,
+                        color: colors.text2,
+                        border: `1px solid ${colors.ring}`,
+                      }}
+                    >
+                      {formatDurationMinutes(course.duration_minutes)}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-3 text-sm" style={{ color: colors.text2 }}>
-                {truncate(r.description, 200)}
+              <div className="mt-3 text-sm leading-6" style={{ color: colors.text2 }}>
+                {truncate(course.description, 180)}
               </div>
 
-              <div className="mt-3 flex justify-end gap-2">
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => onView?.(r)}
-                  className="px-3 py-1.5 rounded-xl border text-xs"
+                  onClick={() => onView?.(course)}
+                  className="px-3 py-2.5 rounded-xl text-sm font-medium inline-flex items-center justify-center gap-1.5"
                   style={{
-                    borderColor: colors.ring,
+                    border: `1px solid ${colors.ring}`,
                     backgroundColor: colors.bg2,
                     color: colors.text,
                   }}
                 >
+                  <MdOutlineVisibility size={16} />
                   View
                 </button>
+
                 <button
-                  onClick={() => onEdit?.(r)}
-                  className="px-3 py-1.5 rounded-xl border text-xs"
+                  onClick={() => onEdit?.(course)}
+                  className="px-3 py-2.5 rounded-xl text-sm font-medium inline-flex items-center justify-center gap-1.5"
                   style={{
-                    borderColor: colors.ring,
+                    border: `1px solid ${colors.ring}`,
                     backgroundColor: colors.bg2,
                     color: colors.text,
                   }}
                 >
+                  <MdEdit size={16} />
                   Edit
                 </button>
               </div>

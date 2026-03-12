@@ -64,7 +64,7 @@ const menuItems = [
     icon: MdSettings,
     label: "Settings",
     path: "/settings",
-    description: "Profile, System & Brand",
+    description: "Profile & Preferences",
     color: "#D4AF37",
   },
 ];

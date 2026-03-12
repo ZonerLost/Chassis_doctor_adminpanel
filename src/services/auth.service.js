@@ -14,7 +14,8 @@ function mapAdminProfile(authUser, profileRow) {
   return {
     id: profileRow.id,
     email: authUser?.email || profileRow.email || "",
-    fullName: profileRow.full_name || "",
+    fullName: profileRow.full_name || authUser?.user_metadata?.full_name || "",
+    avatarUrl: profileRow.avatar_url || authUser?.user_metadata?.avatar_url || "",
     role: profileRow.role || "",
     status: profileRow.status || "active",
   };
@@ -29,7 +30,7 @@ export async function getCurrentSession() {
 export async function getProfileByUserId(userId) {
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, full_name, role, status")
+    .select("id, email, full_name, avatar_url, role, status")
     .eq("id", userId)
     .single();
 

@@ -1,406 +1,424 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import {
+  MdEmail,
+  MdImage,
+  MdLockReset,
+  MdRefresh,
+  MdSave,
+  MdUpload,
+  MdVpnKey,
+} from "react-icons/md";
 import { useTheme } from "../contexts/ThemeContext.jsx";
-import SystemSettings from "./SystemSettings.jsx";
-import SupportMediaSettingsPage from "./SupportMediaSettingsPage.jsx";
-import SettingsPanel from "../components/support/SettingsPanel.jsx";
+import ChangePasswordModal from "../components/support/ChangePasswordModal.jsx";
+import {
+  changeCurrentAdminPassword,
+  getCurrentAdminProfile,
+  sendAdminPasswordResetEmail,
+  updateCurrentAdminProfile,
+} from "../services/settings.service.js";
+
+function toDraft(profile) {
+  return {
+    fullName: profile?.fullName || "",
+    email: profile?.email || "",
+    avatarUrl: profile?.avatarUrl || "",
+    avatarFile: null,
+  };
+}
 
 export default function SettingsManagement() {
   const { colors } = useTheme();
 
-  const TABS = [
-    { key: "profile", label: "Profile" },
-    { key: "system", label: "System" },
-    { key: "media", label: "Media" },
-    { key: "brand", label: "Brand & Roles" },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
-  const [tab, setTab] = useState("profile");
-  const [profile, setProfile] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("admin_profile") || "{}");
-    } catch {
-      return {};
-    }
+  const [profile, setProfile] = useState({
+    id: "",
+    fullName: "",
+    email: "",
+    avatarUrl: "",
   });
 
+  const [draft, setDraft] = useState({
+    fullName: "",
+    email: "",
+    avatarUrl: "",
+    avatarFile: null,
+  });
+
+  const [previewUrl, setPreviewUrl] = useState("");
+
   useEffect(() => {
-    localStorage.setItem("admin_profile", JSON.stringify(profile));
-  }, [profile]);
+    let active = true;
 
-  // refs to child save/reset handlers (registered by children)
-  const saveRef = useRef(null);
-  const resetRef = useRef(null);
-
-  const saveProfile = (next) => {
-    setProfile((p) => ({ ...p, ...next }));
-    // toast/notification can be added here
-  };
-
-  const handleGlobalSave = async () => {
-    if (typeof saveRef.current === "function") {
+    const loadProfile = async () => {
       try {
-        await saveRef.current();
-        // optionally re-load profile from storage
-      } catch {
-        // ignore - child handles validation messages
+        setLoading(true);
+        const data = await getCurrentAdminProfile();
+        if (!active) return;
+
+        setProfile(data);
+        setDraft(toDraft(data));
+        setPreviewUrl(data.avatarUrl || "");
+      } catch (error) {
+        if (!active) return;
+        toast.error(error?.message || "Failed to load settings.");
+      } finally {
+        if (active) setLoading(false);
       }
-    } else {
-      // fallback: if on profile tab, persist profile state
-      if (tab === "profile") saveProfile(profile);
-      alert("Saved (demo)");
+    };
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const inputStyle = useMemo(
+    () => ({
+      backgroundColor: colors.hover,
+      color: colors.text,
+      border: `1px solid ${colors.ring}`,
+    }),
+    [colors]
+  );
+
+  const initials = useMemo(() => {
+    return (
+      draft.fullName
+        ?.split(" ")
+        ?.filter(Boolean)
+        ?.slice(0, 2)
+        ?.map((part) => part[0]?.toUpperCase())
+        ?.join("") || "A"
+    );
+  }, [draft.fullName]);
+
+  const patch = (key, value) => {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    patch("avatarFile", file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleReset = () => {
+    const next = toDraft(profile);
+    setDraft(next);
+
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    setPreviewUrl(profile.avatarUrl || "");
+  };
+
+  const handleSave = async () => {
+    if (!draft.fullName.trim()) {
+      toast.error("Full name is required.");
+      return;
+    }
+
+    if (!draft.email.trim()) {
+      toast.error("Email is required.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(draft.email.trim())) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const result = await updateCurrentAdminProfile({
+        fullName: draft.fullName,
+        email: draft.email,
+        avatarFile: draft.avatarFile,
+      });
+
+      setProfile(result.profile);
+      setDraft(toDraft(result.profile));
+      setPreviewUrl(result.profile.avatarUrl || "");
+
+      toast.success("Profile updated successfully.");
+
+      if (result.emailChangeRequested) {
+        toast(
+          "Your email change request was submitted. Check your inbox if confirmation is required.",
+          {
+            icon: "📩",
+          }
+        );
+      }
+    } catch (error) {
+      toast.error(error?.message || "Failed to save settings.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleGlobalReset = () => {
-    if (typeof resetRef.current === "function") {
-      resetRef.current();
-    } else {
-      // fallback: reset stored profile to defaults
-      setProfile({});
+  const handleForgotPassword = async () => {
+    try {
+      setResetLoading(true);
+      await sendAdminPasswordResetEmail();
+      toast.success("Password reset email sent.");
+    } catch (error) {
+      toast.error(error?.message || "Failed to send reset email.");
+    } finally {
+      setResetLoading(false);
     }
   };
+
+  const handlePasswordChange = async (newPassword) => {
+    try {
+      setPasswordLoading(true);
+      await changeCurrentAdminPassword(newPassword);
+      toast.success("Password updated successfully.");
+      setPasswordModalOpen(false);
+    } catch (error) {
+      toast.error(error?.message || "Failed to update password.");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const avatarSrc = previewUrl || draft.avatarUrl || "";
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <h1 className="text-xl sm:text-2xl font-semibold" style={{ color: colors.text }}>
-          Settings
-        </h1>
-        <div className="text-xs sm:text-sm" style={{ color: colors.text2 }}>
-          Manage profile, system and brand settings
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ color: colors.text }}>
+            Settings
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: colors.text2 }}>
+            Manage your admin profile and account security
+          </p>
         </div>
       </div>
 
-      {/* Styled module header like other analytics modules */}
       <div
         className="rounded-2xl overflow-hidden"
-        style={{ border: `1px solid ${colors.ring}` }}
-      >
-        <div style={{ backgroundColor: colors.accent + "10" }}>
-          <div className="px-2 sm:px-4 py-2 sm:py-3 overflow-x-auto">
-            <div className="flex items-center gap-2 sm:gap-4 md:gap-6 min-w-max">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className="uppercase text-xs font-semibold whitespace-nowrap"
-                style={{
-                  color: colors.accent,
-                  padding: "6px 10px",
-                  borderRadius: 8,
-                  background:
-                    tab === t.key ? colors.accent + "15" : "transparent",
-                  boxShadow:
-                    tab === t.key ? `inset 0 -2px 0 ${colors.accent}` : "none",
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        {tab === "profile" && (
-          <div
-            className="rounded-2xl p-3 sm:p-4"
-            style={{
-              backgroundColor: colors.bg2,
-              border: `1px solid ${colors.ring}`,
-            }}
-          >
-            <ProfileSettings
-              value={profile}
-              onSave={saveProfile}
-              registerSave={(saveFn, resetFn) => {
-                saveRef.current = saveFn;
-                resetRef.current = resetFn;
-              }}
-            />
-          </div>
-        )}
-
-        {tab === "system" && (
-          <div
-            className="rounded-2xl p-3 sm:p-4"
-            style={{
-              backgroundColor: colors.bg2,
-              border: `1px solid ${colors.ring}`,
-            }}
-          >
-            <SystemSettings
-              registerSave={(s, r) => {
-                saveRef.current = s;
-                resetRef.current = r;
-              }}
-            />
-          </div>
-        )}
-
-        {tab === "media" && (
-          <div
-            className="rounded-2xl p-3 sm:p-4"
-            style={{
-              backgroundColor: colors.bg2,
-              border: `1px solid ${colors.ring}`,
-            }}
-          >
-            <SupportMediaSettingsPage />
-          </div>
-        )}
-
-        {tab === "brand" && (
-          <div
-            className="rounded-2xl p-3 sm:p-4"
-            style={{
-              backgroundColor: colors.bg2,
-              border: `1px solid ${colors.ring}`,
-            }}
-          >
-            <SettingsPanel
-              brand={{}}
-              founders={[]}
-              plans={{ tiers: [] }}
-              integrations={[]}
-              roles={[]}
-              audit={[]}
-              onSaveBrand={() => alert("Brand saved (demo)")}
-              onSaveFounders={() => alert("Founders saved (demo)")}
-              onSavePlans={() => alert("Plans saved (demo)")}
-              onSaveIntegrations={() => alert("Integrations saved (demo)")}
-              onSaveRoles={() => alert("Roles saved (demo)")}
-              onExportAudit={() => alert("Export audit (demo)")}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Persistent action bar */}
-      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-        <button
-          onClick={handleGlobalReset}
-          className="px-4 py-2 rounded-xl text-sm w-full sm:w-auto"
-          style={{
-            backgroundColor: colors.hover,
-            border: `1px solid ${colors.ring}`,
-            color: colors.text2,
-          }}
-        >
-          Reset
-        </button>
-
-        <button
-          onClick={handleGlobalSave}
-          className="px-4 py-2 rounded-full text-sm font-semibold flex items-center justify-center uppercase tracking-wider w-full sm:w-auto"
-          style={{
-            backgroundColor: colors.bg2, // dark pill background
-            color: colors.gold || "#D4AF37", // gold text
-            border: `1px solid ${colors.ring}`, // subtle border
-            minWidth: 96,
-            height: 40,
-            boxShadow: `0 6px 18px ${
-              colors.gold ? colors.gold + "22" : "#D4AF3722"
-            }`,
-          }}
-        >
-          Save
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------- Profile form (theme-matching) ------------------- */
-function ProfileSettings({
-  value = {},
-  onSave = () => {},
-  registerSave = () => {},
-}) {
-  const { colors } = useTheme();
-  const [form, setForm] = useState({
-    name: value.name || "",
-    email: value.email || "",
-    avatar: value.avatar || "/assets/Logo.png",
-    timezone:
-      value.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-    locale: value.locale || navigator.language || "en-US",
-    changePwd: false,
-    password: "",
-    confirm: "",
-  });
-
-  useEffect(() => {
-    setForm((f) => ({
-      ...f,
-      name: value.name || f.name,
-      email: value.email || f.email,
-    }));
-  }, [value]);
-
-  // register save/reset so parent "Save" / "Reset" works
-  useEffect(() => {
-    const saveFn = async () => {
-      if (form.changePwd && form.password.length < 6) {
-        alert("Password must be 6+ chars");
-        throw new Error("validation");
-      }
-      if (form.changePwd && form.password !== form.confirm) {
-        alert("Passwords do not match");
-        throw new Error("validation");
-      }
-      onSave({
-        name: form.name,
-        email: form.email,
-        avatar: form.avatar,
-        timezone: form.timezone,
-        locale: form.locale,
-      });
-      alert("Profile saved (demo)");
-    };
-
-    const resetFn = () => {
-      setForm({
-        name: "",
-        email: "",
-        avatar: "/assets/Logo.png",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        locale: navigator.language || "en-US",
-        changePwd: false,
-        password: "",
-        confirm: "",
-      });
-    };
-
-    registerSave(saveFn, resetFn);
-
-    return () => registerSave(null, null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, onSave]);
-
-  const inputStyle = {
-    backgroundColor: colors.hover || "#12131A",
-    color: colors.text,
-    border: `1px solid ${colors.ring}`,
-  };
-
-  return (
-    <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-      <div className="grid sm:grid-cols-3 gap-3">
-        <div className="sm:col-span-2">
-          <label className="text-xs" style={{ color: colors.text2 }}>
-            Full name
-          </label>
-          <input
-            value={form.name}
-            onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-            className="mt-1 w-full rounded-xl px-3 h-11 text-sm outline-none"
-            style={inputStyle}
-            placeholder="Your name"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs" style={{ color: colors.text2 }}>
-            Avatar URL
-          </label>
-          <input
-            value={form.avatar}
-            onChange={(e) => setForm((s) => ({ ...s, avatar: e.target.value }))}
-            className="mt-1 w-full rounded-xl px-3 h-11 text-sm outline-none"
-            style={inputStyle}
-            placeholder="/assets/avatar.png"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs" style={{ color: colors.text2 }}>
-            Email
-          </label>
-          <input
-            value={form.email}
-            onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
-            className="mt-1 w-full rounded-xl px-3 h-11 text-sm outline-none"
-            style={inputStyle}
-            placeholder="you@example.com"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs" style={{ color: colors.text2 }}>
-            Timezone
-          </label>
-          <input
-            value={form.timezone}
-            onChange={(e) =>
-              setForm((s) => ({ ...s, timezone: e.target.value }))
-            }
-            className="mt-1 w-full rounded-xl px-3 h-11 text-sm outline-none"
-            style={inputStyle}
-          />
-        </div>
-
-        <div>
-          <label className="text-xs" style={{ color: colors.text2 }}>
-            Locale
-          </label>
-          <input
-            value={form.locale}
-            onChange={(e) => setForm((s) => ({ ...s, locale: e.target.value }))}
-            className="mt-1 w-full rounded-xl px-3 h-11 text-sm outline-none"
-            style={inputStyle}
-          />
-        </div>
-      </div>
-
-      <div
-        className="rounded-2xl p-3"
         style={{
-          backgroundColor: colors.card || colors.bg2,
+          backgroundColor: colors.bg2,
           border: `1px solid ${colors.ring}`,
         }}
       >
-        <label
-          className="inline-flex items-center gap-2 text-sm"
-          style={{ color: colors.text2 }}
+        <div
+          className="px-5 py-4 border-b"
+          style={{ borderColor: colors.ring }}
         >
-          <input
-            type="checkbox"
-            checked={form.changePwd}
-            onChange={(e) =>
-              setForm((s) => ({ ...s, changePwd: e.target.checked }))
-            }
-            className="accent-[#6E56CF]"
-          />
-          Change password
-        </label>
+          <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: colors.accent }}>
+            Profile
+          </h2>
+        </div>
 
-        {form.changePwd && (
-          <div className="grid sm:grid-cols-2 gap-3 mt-3">
-            <input
-              value={form.password}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, password: e.target.value }))
-              }
-              type="password"
-              placeholder="New password"
-              className="rounded-xl px-3 h-11 text-sm outline-none"
-              style={inputStyle}
-            />
-            <input
-              value={form.confirm}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, confirm: e.target.value }))
-              }
-              type="password"
-              placeholder="Confirm password"
-              className="rounded-xl px-3 h-11 text-sm outline-none"
-              style={inputStyle}
-            />
+        {loading ? (
+          <div className="p-6 text-sm" style={{ color: colors.text2 }}>
+            Loading settings...
+          </div>
+        ) : (
+          <div className="p-5 sm:p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt={draft.fullName || "Admin avatar"}
+                  className="w-24 h-24 rounded-full object-cover border"
+                  style={{ borderColor: colors.ring }}
+                />
+              ) : (
+                <div
+                  className="w-24 h-24 rounded-full border flex items-center justify-center text-2xl font-semibold"
+                  style={{
+                    borderColor: colors.ring,
+                    backgroundColor: colors.hover,
+                    color: colors.text,
+                  }}
+                >
+                  {initials}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer border text-sm font-medium"
+                  style={{
+                    borderColor: colors.ring,
+                    backgroundColor: colors.hover,
+                    color: colors.text,
+                  }}
+                >
+                  <MdUpload size={18} />
+                  <span>Upload Avatar</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                </label>
+
+                <p className="text-xs" style={{ color: colors.text2 }}>
+                  Upload a JPG, PNG, or WEBP image for your admin profile.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs mb-1" style={{ color: colors.text2 }}>
+                  Full Name
+                </label>
+                <div className="relative">
+                  <MdImage
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    size={18}
+                    style={{ color: colors.text2 }}
+                  />
+                  <input
+                    value={draft.fullName}
+                    onChange={(e) => patch("fullName", e.target.value)}
+                    className="w-full rounded-xl pl-10 pr-3 h-11 text-sm outline-none"
+                    style={inputStyle}
+                    placeholder="Admin full name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs mb-1" style={{ color: colors.text2 }}>
+                  Admin Email
+                </label>
+                <div className="relative">
+                  <MdEmail
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    size={18}
+                    style={{ color: colors.text2 }}
+                  />
+                  <input
+                    value={draft.email}
+                    onChange={(e) => patch("email", e.target.value)}
+                    className="w-full rounded-xl pl-10 pr-3 h-11 text-sm outline-none"
+                    style={inputStyle}
+                    placeholder="admin@example.com"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl p-4"
+              style={{
+                backgroundColor: colors.card,
+                border: `1px solid ${colors.ring}`,
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold" style={{ color: colors.text }}>
+                    Security
+                  </h3>
+                  <p className="mt-1 text-xs" style={{ color: colors.text2 }}>
+                    Change your password instantly or send yourself a reset email.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => setPasswordModalOpen(true)}
+                    className="px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                    style={{
+                      backgroundColor: colors.hover,
+                      border: `1px solid ${colors.ring}`,
+                      color: colors.text,
+                    }}
+                  >
+                    <MdVpnKey size={16} />
+                    <span>Change Password</span>
+                  </button>
+
+                  <button
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                    className="px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                    style={{
+                      backgroundColor: colors.hover,
+                      border: `1px solid ${colors.ring}`,
+                      color: colors.text,
+                      opacity: resetLoading ? 0.7 : 1,
+                    }}
+                  >
+                    <MdLockReset size={16} />
+                    <span>{resetLoading ? "Sending..." : "Forgot Password"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+              <button
+                onClick={handleReset}
+                disabled={saving}
+                className="px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: colors.hover,
+                  border: `1px solid ${colors.ring}`,
+                  color: colors.text2,
+                }}
+              >
+                <MdRefresh size={16} />
+                <span>Reset</span>
+              </button>
+
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: colors.accent,
+                  color: "#000",
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                <MdSave size={16} />
+                <span>{saving ? "Saving..." : "Save Changes"}</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
-    </form>
+
+      <ChangePasswordModal
+        isOpen={passwordModalOpen}
+        loading={passwordLoading}
+        onClose={() => setPasswordModalOpen(false)}
+        onSubmit={handlePasswordChange}
+      />
+    </div>
   );
 }
