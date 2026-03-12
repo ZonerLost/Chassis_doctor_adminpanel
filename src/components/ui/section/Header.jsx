@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { MdMenu, MdNotifications, MdClear } from "react-icons/md";
+import { MdMenu } from "react-icons/md";
 import { IoMoon, IoSunny } from "react-icons/io5";
 import { useTheme } from "../../../contexts/ThemeContext";
 
@@ -8,53 +8,10 @@ const Header = ({ onMenuClick }) => {
   const { isDark, colors, toggleTheme } = useTheme();
   const { pathname } = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New user registration",
-      message: "John Doe has joined the platform",
-      time: "5 min ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "System maintenance",
-      message: "Scheduled maintenance at 2 AM",
-      time: "1 hour ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "Course completed",
-      message: "Advanced Racing completed by Jane Smith",
-      time: "2 hours ago",
-      unread: false,
-    },
-  ]);
-  const [showNotifications, setShowNotifications] = useState(false);
 
-  // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
-  }, []);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      let node = event.target;
-      while (node && node.nodeType !== 1) node = node.parentElement;
-      const isNotification =
-        node && node.closest && node.closest(".notification-dropdown");
-      const isNotificationBtn =
-        node && node.closest && node.closest(".notification-button");
-      if (!isNotification && !isNotificationBtn) {
-        setShowNotifications(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   const pageName =
@@ -76,26 +33,6 @@ const Header = ({ onMenuClick }) => {
       day: "numeric",
     });
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
-
-  const markNotificationAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === id ? { ...notif, unread: false } : notif
-      )
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notif) => ({ ...notif, unread: false }))
-    );
-  };
-
-  const clearNotification = (id) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
-  };
-
   return (
     <header
       className="sticky top-0 left-0 right-0 h-20 w-full flex items-center gap-4 px-4 md:px-6 shadow-lg border-b backdrop-blur-sm overflow-visible transition-colors duration-300"
@@ -108,7 +45,6 @@ const Header = ({ onMenuClick }) => {
         zIndex: 100,
       }}
     >
-      {/* Mobile menu button */}
       <button
         onClick={onMenuClick}
         className="p-3 rounded-xl lg:hidden transition-all duration-200 hover:scale-105 active:scale-95 group relative"
@@ -124,10 +60,8 @@ const Header = ({ onMenuClick }) => {
         />
       </button>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Time and Date */}
       <div className="hidden md:flex flex-col items-end text-right">
         <div
           className="text-lg font-bold tabular-nums transition-colors duration-300"
@@ -143,7 +77,6 @@ const Header = ({ onMenuClick }) => {
         </div>
       </div>
 
-      {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
         className="p-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 relative group"
@@ -166,137 +99,6 @@ const Header = ({ onMenuClick }) => {
         )}
       </button>
 
-      {/* Notifications */}
-      <div className="relative">
-        <button
-          className="notification-button p-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 relative group"
-          style={{
-            backgroundColor: `${colors.hover}40`,
-            color: colors.text2,
-          }}
-          aria-label="Notifications"
-          onClick={() => setShowNotifications(!showNotifications)}
-        >
-          <MdNotifications
-            size={20}
-            className="transition-all group-hover:text-white"
-          />
-          {unreadCount > 0 && (
-            <span
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs font-bold flex items-center justify-center text-white animate-pulse"
-              style={{ backgroundColor: "#ef4444" }}
-            >
-              {unreadCount}
-            </span>
-          )}
-        </button>
-
-        {/* Notifications Dropdown */}
-        {showNotifications && (
-          <div
-            className="notification-dropdown fixed right-4 mt-2 w-80 rounded-2xl border shadow-2xl max-h-96 overflow-hidden transition-all duration-200"
-            style={{
-              backgroundColor: colors.card,
-              borderColor: colors.ring,
-              zIndex: 9999,
-              top: "80px",
-            }}
-          >
-            <div className="p-4 border-b" style={{ borderColor: colors.ring }}>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold" style={{ color: colors.text }}>
-                  Notifications
-                </h3>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllAsRead}
-                    className="text-sm hover:underline"
-                    style={{ color: colors.accent }}
-                  >
-                    Mark all as read
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="max-h-64 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div
-                  className="p-6 text-center"
-                  style={{ color: colors.text2 }}
-                >
-                  No notifications
-                </div>
-              ) : (
-                notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className="p-4 border-b hover:bg-opacity-50 relative group cursor-pointer transition-colors duration-150"
-                    style={{
-                      borderColor: colors.ring,
-                      backgroundColor: notif.unread
-                        ? colors.accent + "10"
-                        : "transparent",
-                    }}
-                    onClick={() => markNotificationAsRead(notif.id)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = colors.hover;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = notif.unread
-                        ? colors.accent + "10"
-                        : "transparent";
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4
-                          className="font-medium text-sm"
-                          style={{ color: colors.text }}
-                        >
-                          {notif.title}
-                        </h4>
-                        <p
-                          className="text-xs mt-1"
-                          style={{ color: colors.text2 }}
-                        >
-                          {notif.message}
-                        </p>
-                        <span
-                          className="text-xs mt-2 inline-block"
-                          style={{ color: colors.text2 }}
-                        >
-                          {notif.time}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearNotification(notif.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 transition-opacity"
-                        style={{ color: colors.text2 }}
-                      >
-                        <MdClear size={16} />
-                      </button>
-                    </div>
-
-                    {notif.unread && (
-                      <div
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 w-2 h-2 rounded-full"
-                        style={{ backgroundColor: colors.accent }}
-                      />
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Breadcrumb */}
       <div
         className="hidden xl:flex items-center gap-2 text-sm px-4 py-2 rounded-full border transition-colors duration-300"
         style={{
@@ -308,8 +110,12 @@ const Header = ({ onMenuClick }) => {
           to="/"
           className="font-medium hover:underline transition-colors duration-200 px-2 py-1 rounded-full"
           style={{ color: colors.accent }}
-          onMouseEnter={(e) => (e.target.style.backgroundColor = colors.hover)}
-          onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
+          onMouseEnter={(event) =>
+            (event.target.style.backgroundColor = colors.hover)
+          }
+          onMouseLeave={(event) =>
+            (event.target.style.backgroundColor = "transparent")
+          }
         >
           Dashboard
         </Link>
@@ -318,14 +124,13 @@ const Header = ({ onMenuClick }) => {
           className="capitalize font-medium px-2 py-1 rounded-full transition-colors duration-300"
           style={{
             color: colors.text,
-            backgroundColor: colors.hover + "50",
+            backgroundColor: `${colors.hover}50`,
           }}
         >
           {pageName}
         </span>
       </div>
 
-      {/* CSS animation */}
       <style>{`
         @keyframes pulse {
           0%, 100% {

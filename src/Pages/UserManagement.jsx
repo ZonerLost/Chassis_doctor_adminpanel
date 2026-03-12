@@ -1,79 +1,109 @@
-import React, { useState } from "react";
-import { useTheme } from "../contexts/ThemeContext";
-import SectionCard from "../components/ui/common/SectionCard";
-import SearchInput from "../components/ui/common/SearchInput";
-import { useUsers } from "../hooks/useUsers";
+import React, { useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { MdPersonAdd } from "react-icons/md";
-import UserEditorModal from "../components/user/UserEditorModal";
-import UserDirectoryTable from "../components/user/UserDirectoryTable";
+import SearchInput from "../components/ui/common/SearchInput";
+import SectionCard from "../components/ui/common/SectionCard";
 import LoadingSpinner from "../components/ui/shared/LoadingSpinner.jsx";
+import UserDirectoryTable from "../components/user/UserDirectoryTable";
+import UserEditorModal from "../components/user/UserEditorModal";
+import { useTheme } from "../contexts/ThemeContext";
+import { useUsers } from "../hooks/useUsers";
+
+const PAGE_SIZE_OPTIONS = [15, 50, 100];
 
 const UserManagement = () => {
   const { colors, isDark } = useTheme();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [selected, setSelected] = useState(null);
   const [open, setOpen] = useState(false);
 
-  const { rows: users, save: saveUser, loading } = useUsers();
+  const {
+    rows,
+    loading,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    searchTerm,
+    statusFilter,
+    showingFrom,
+    showingTo,
+    setPage,
+    setPageSize,
+    setSearchTerm,
+    setStatusFilter,
+    save,
+    remove,
+  } = useUsers();
 
-  // Filter users based on search term, role, and status
-  const filteredUsers = users.filter((user) => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch =
-      (user.fullName || user.name || "").toLowerCase().includes(term) ||
-      (user.email || "").toLowerCase().includes(term);
-    const matchesRole =
-      !roleFilter || (user.role || "").toLowerCase() === roleFilter.toLowerCase();
-    const matchesStatus =
-      !statusFilter ||
-      (user.status || "").toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  const statusOptions = useMemo(
+    () => [
+      { label: "All Status", value: "" },
+      { label: "Active", value: "active" },
+      { label: "Suspended", value: "suspended" },
+      { label: "Inactive", value: "inactive" },
+    ],
+    []
+  );
 
-  const onEdit = (u) => {
-    setSelected(u);
+  const openCreate = () => {
+    setSelected(null);
     setOpen(true);
   };
 
-  const onSave = async (form) => {
+  const openEdit = (user) => {
+    setSelected(user);
+    setOpen(true);
+  };
+
+  const handleSave = async (form) => {
     try {
-      await saveUser(form);
+      await save(form);
+      toast.success(
+        form?.id ? "User updated successfully." : "User created successfully."
+      );
       setOpen(false);
     } catch (error) {
-      console.error("Failed to update user:", error);
+      console.error("Failed to save user:", error);
+      toast.error(error?.message || "Could not save user.");
     }
   };
 
-  // role/status badges are handled by UserDirectoryTable
+  const handleDelete = async (user) => {
+    const confirmed = window.confirm(
+      `Delete ${user?.fullName || user?.email || "this user"}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await remove(user.id);
+      toast.success("User deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      toast.error(error?.message || "Could not delete user.");
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
             User Directory
           </h1>
           <p className="mt-1" style={{ color: colors.text2 }}>
-            Manage user accounts, roles, and permissions
+            Manage user accounts and contact information
           </p>
         </div>
       </div>
 
-      {/* User Directory Section */}
       <SectionCard
         title="User Directory"
         headerRight={
-          // Responsive control group: stack on small screens, inline on sm+
           <div className="flex gap-3 flex-col sm:flex-row sm:items-center w-full sm:w-auto">
             <div className="w-full sm:w-auto flex justify-end sm:justify-start">
               <button
-                onClick={() => {
-                  setSelected(null);
-                  setOpen(true);
-                }}
+                onClick={openCreate}
                 aria-label="Add user"
                 className="px-3 py-2 rounded-lg flex items-center gap-2"
                 style={{
@@ -84,51 +114,6 @@ const UserManagement = () => {
                 <span className="hidden sm:inline">Add User</span>
                 <MdPersonAdd className="sm:hidden" />
               </button>
-            </div>
-            <div className="w-full sm:w-auto">
-              <select
-                className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border transition-colors duration-200 appearance-none cursor-pointer"
-                style={{
-                  backgroundColor: colors.card,
-                  borderColor: colors.ring,
-                  color: colors.text,
-                  colorScheme: isDark ? "dark" : "light",
-                }}
-                aria-label="Filter by role"
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-              >
-                <option
-                  value=""
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  All Roles
-                </option>
-                <option
-                  value="admin"
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  Admin
-                </option>
-                <option
-                  value="instructor"
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  Instructor
-                </option>
-                <option
-                  value="driver"
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  Driver
-                </option>
-                <option
-                  value="staff"
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  Staff
-                </option>
-              </select>
             </div>
 
             <div className="w-full sm:w-auto">
@@ -142,32 +127,42 @@ const UserManagement = () => {
                 }}
                 aria-label="Filter by status"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(event) => setStatusFilter(event.target.value)}
               >
-                <option
-                  value=""
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  All Status
-                </option>
-                <option
-                  value="active"
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  Active
-                </option>
-                <option
-                  value="suspended"
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  Suspended
-                </option>
-                <option
-                  value="inactive"
-                  style={{ backgroundColor: colors.card, color: colors.text }}
-                >
-                  Inactive
-                </option>
+                {statusOptions.map((option) => (
+                  <option
+                    key={option.value || "all"}
+                    value={option.value}
+                    style={{ backgroundColor: colors.card, color: colors.text }}
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="w-full sm:w-auto">
+              <select
+                className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border transition-colors duration-200 appearance-none cursor-pointer"
+                style={{
+                  backgroundColor: colors.card,
+                  borderColor: colors.ring,
+                  color: colors.text,
+                  colorScheme: isDark ? "dark" : "light",
+                }}
+                aria-label="Rows per page"
+                value={pageSize}
+                onChange={(event) => setPageSize(event.target.value)}
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option
+                    key={size}
+                    value={size}
+                    style={{ backgroundColor: colors.card, color: colors.text }}
+                  >
+                    {size} / page
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -180,7 +175,6 @@ const UserManagement = () => {
             onChange={setSearchTerm}
           />
 
-          {/* Users Table */}
           <div
             className="overflow-hidden rounded-xl border"
             style={{ borderColor: colors.ring }}
@@ -191,31 +185,19 @@ const UserManagement = () => {
               </div>
             ) : (
               <UserDirectoryTable
-                rows={filteredUsers}
-                loading={loading}
-                onEdit={onEdit}
-                onToggleSuspend={async (u) => {
-                  // toggle status and save
-                  const next = {
-                    ...u,
-                    status: u.status === "active" ? "suspended" : "active",
-                  };
-                  try {
-                    await saveUser(next);
-                  } catch (err) {
-                    console.error("Failed toggling user status", err);
-                  }
-                }}
+                rows={rows}
+                onEdit={openEdit}
+                onDelete={handleDelete}
               />
             )}
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm" style={{ color: colors.text2 }}>
-              Showing {filteredUsers.length} of {users.length} users
+              Showing {showingFrom}-{showingTo} of {total} users
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex items-center gap-2">
               <button
                 className="px-3 py-2 text-sm rounded-lg border transition-colors duration-200 disabled:opacity-50"
                 style={{
@@ -223,10 +205,19 @@ const UserManagement = () => {
                   borderColor: colors.ring,
                   color: colors.text,
                 }}
-                disabled
+                disabled={page <= 1 || loading}
+                onClick={() => setPage(page - 1)}
               >
                 Prev
               </button>
+
+              <div
+                className="text-sm min-w-[72px] text-center"
+                style={{ color: colors.text2 }}
+              >
+                {page} / {totalPages}
+              </div>
+
               <button
                 className="px-3 py-2 text-sm rounded-lg border transition-colors duration-200 disabled:opacity-50"
                 style={{
@@ -234,7 +225,8 @@ const UserManagement = () => {
                   borderColor: colors.ring,
                   color: colors.text,
                 }}
-                disabled
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage(page + 1)}
               >
                 Next
               </button>
@@ -243,14 +235,14 @@ const UserManagement = () => {
         </div>
       </SectionCard>
 
-      {open && (
+      {open ? (
         <UserEditorModal
           isOpen={open}
           user={selected}
           onClose={() => setOpen(false)}
-          onSave={onSave}
+          onSave={handleSave}
         />
-      )}
+      ) : null}
     </div>
   );
 };

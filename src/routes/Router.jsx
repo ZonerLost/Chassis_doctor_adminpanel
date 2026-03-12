@@ -49,9 +49,13 @@ const FailedToLoad = ({ page }) => (
 
 const lazyPage = (importer, page) =>
   React.lazy(() =>
-    importer().catch(() => ({
-      default: () => <FailedToLoad page={page} />,
-    }))
+    importer().catch((error) => {
+      console.error(`Failed to lazy-load ${page} page:`, error);
+
+      return {
+        default: () => <FailedToLoad page={page} />,
+      };
+    })
   );
 
 const renderLazy = (LazyComp) => (

@@ -1,57 +1,128 @@
-import { useEffect, useState } from "react";
-import { listUsers, updateUser, createUser } from "../services/users.service";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createUser,
+  deleteUser,
+  listUsers,
+  updateUser,
+} from "../services/users.service";
+
+const DEFAULT_PAGE_SIZE = 15;
 
 export function useUsers() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(DEFAULT_PAGE_SIZE);
+  const [searchTerm, setSearchTermState] = useState("");
+  const [statusFilter, setStatusFilterState] = useState("");
+  const [total, setTotal] = useState(0);
 
-  const load = async (opts = {}) => {
-    setLoading(true);
-    try {
-      const { data } = await listUsers(opts);
-      setRows(data || []);
-    } catch (err) {
-      console.error("Failed to load users:", err);
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(total / pageSize)),
+    [pageSize, total]
+  );
+
+  const load = useCallback(
+    async (overrides = {}) => {
+      const params = {
+        page,
+        pageSize,
+        query: searchTerm,
+        status: statusFilter,
+        ...overrides,
+      };
+
+      setLoading(true);
+
+      try {
+        const { data, total: nextTotal } = await listUsers(params);
+        setRows(data || []);
+        setTotal(nextTotal || 0);
+        return { data, total: nextTotal || 0 };
+      } catch (error) {
+        console.error("Failed to load users:", error);
+        setRows([]);
+        setTotal(0);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, pageSize, searchTerm, statusFilter]
+  );
 
   useEffect(() => {
-    load();
-  }, []);
+    load().catch(() => {});
+  }, [load]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const setSearchTerm = (value) => {
+    setPage(1);
+    setSearchTermState(value);
+  };
+
+  const setStatusFilter = (value) => {
+    setPage(1);
+    setStatusFilterState(value);
+  };
+
+  const setPageSize = (value) => {
+    setPage(1);
+    setPageSizeState(Number(value) || DEFAULT_PAGE_SIZE);
+  };
 
   const save = async (user) => {
     if (!user?.id) {
-      // create new user and insert it at the top of the current rows so
-      // it's immediately visible on the first page.
-      try {
-        const created = await createUser(user);
-        setRows((prev) => [created, ...prev]);
-        return;
-      } catch (err) {
-        console.error("Failed creating user:", err);
-        await load();
-        throw err;
+      await createUser(user);
+      if (page !== 1) {
+        setPage(1);
       }
+      await load({ page: 1 });
+      return;
     }
 
-    // optimistic update locally for existing user
-    setRows((prev) =>
-      prev.map((r) => (r.id === user.id ? { ...r, ...user } : r))
-    );
-    try {
-      await updateUser(user.id, user);
-      // reload to ensure server truth
-      await load();
-    } catch (err) {
-      console.error("Failed saving user:", err);
-      // reload to revert optimistic change
-      await load();
-      throw err;
-    }
+    await updateUser(user.id, user);
+    await load();
   };
 
-  return { rows, loading, reload: load, save };
+  const remove = async (userId) => {
+    await deleteUser(userId);
+
+    const shouldGoBack = rows.length === 1 && page > 1;
+    const nextPage = shouldGoBack ? page - 1 : page;
+
+    if (shouldGoBack) {
+      setPage(nextPage);
+    }
+
+    await load({ page: nextPage });
+  };
+
+  const showingFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const showingTo = total === 0 ? 0 : Math.min(page * pageSize, total);
+
+  return {
+    rows,
+    loading,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    searchTerm,
+    statusFilter,
+    showingFrom,
+    showingTo,
+    setPage,
+    setPageSize,
+    setSearchTerm,
+    setStatusFilter,
+    reload: load,
+    save,
+    remove,
+  };
 }

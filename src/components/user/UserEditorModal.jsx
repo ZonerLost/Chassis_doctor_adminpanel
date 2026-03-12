@@ -1,55 +1,110 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { MdClose, MdSave, MdUpload } from "react-icons/md";
 import { useTheme } from "../../contexts/ThemeContext";
-import { MdClose, MdSave, MdEdit } from "react-icons/md";
+
+const emptyForm = {
+  fullName: "",
+  email: "",
+  status: "active",
+  phone: "",
+  location: "",
+  dob: "",
+  avatarUrl: "",
+  avatarFile: null,
+};
+
+function buildInitialForm(user) {
+  if (!user) {
+    return { ...emptyForm };
+  }
+
+  return {
+    ...emptyForm,
+    id: user.id,
+    fullName: user.fullName || "",
+    email: user.email || "",
+    status: user.status || "active",
+    phone: user.phone || "",
+    location: user.location || "",
+    dob: user.dob || "",
+    avatarUrl: user.avatarUrl || "",
+  };
+}
 
 export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
   const { colors } = useTheme();
-  const [form, setForm] = useState(user || null);
+  const [form, setForm] = useState(buildInitialForm(user));
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  useEffect(
-    () =>
-      setForm(
-        user || {
-          fullName: "",
-          email: "",
-          role: "driver",
-          status: "active",
-          purchasedCourses: 0,
-          chassisUses: 0,
-        }
-      ),
-    [user, isOpen]
-  );
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    const next = buildInitialForm(user);
+    setForm(next);
+    setErrors({});
+    setPreviewUrl(next.avatarUrl || "");
+  }, [user, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   if (!isOpen) return null;
 
-  const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const patch = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const onAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    patch("avatarFile", file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
 
   const validate = () => {
-    const e = {};
+    const nextErrors = {};
     const email = String(form?.email || "").trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // generic email validation
+    const fullName = String(form?.fullName || "").trim();
+    const phone = String(form?.phone || "").trim();
+
+    if (!fullName) {
+      nextErrors.fullName = "Full name is required.";
+    }
+
     if (!email) {
-      e.email = "Email is required.";
-    } else if (!emailRegex.test(email)) {
-      e.email = "Enter a valid email address.";
+      nextErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      nextErrors.email = "Enter a valid email address.";
     }
 
-    const purchased = Number(form?.purchasedCourses ?? 0);
-    if (!Number.isFinite(purchased) || purchased < 0) {
-      e.purchasedCourses = "Courses must be a number greater than or equal to 0.";
+    if (phone && !/^[0-9+\-\s()]{7,20}$/.test(phone)) {
+      nextErrors.phone = "Enter a valid phone number.";
     }
 
-    const chassis = Number(form?.chassisUses ?? 0);
-    if (!Number.isFinite(chassis) || chassis < 0) {
-      e.chassisUses = "Chassis must be a number greater than or equal to 0.";
-    }
-
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
+
+  const initials =
+    form?.fullName
+      ?.split(" ")
+      ?.filter(Boolean)
+      ?.slice(0, 2)
+      ?.map((part) => part[0]?.toUpperCase())
+      ?.join("") || "U";
+
+  const avatarSrc = previewUrl || "";
 
   try {
     return createPortal(
@@ -64,7 +119,7 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
         />
 
         <div
-          className="relative bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+          className="relative rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl"
           style={{ backgroundColor: colors.card, color: colors.text }}
         >
           <div
@@ -77,10 +132,11 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
               </h3>
               <p className="text-sm mt-1" style={{ color: colors.text2 }}>
                 {user
-                  ? "Update profile fields and save."
+                  ? "Update profile details and save."
                   : "Fill the fields to create a new user."}
               </p>
             </div>
+
             <button
               onClick={onClose}
               className="p-2 rounded-lg"
@@ -91,73 +147,125 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
           </div>
 
           <div className="p-6 max-h-[70vh] overflow-y-auto">
-            <div className="space-y-3">
-              <label className="block text-sm">
-                <span
-                  className="block text-xs mb-1"
-                  style={{ color: colors.text2 }}
-                >
-                  Full Name
-                </span>
-                <input
-                  className="w-full rounded-xl border px-3 py-2"
-                  style={{
-                    borderColor: colors.ring,
-                    backgroundColor: colors.hover,
-                    color: colors.text,
-                  }}
-                  value={form?.fullName || ""}
-                  onChange={(e) => patch("fullName", e.target.value)}
-                />
-              </label>
-
-              <label className="block text-sm">
-                <span
-                  className="block text-xs mb-1"
-                  style={{ color: colors.text2 }}
-                >
-                  Email
-                </span>
-                <input
-                  className="w-full rounded-xl border px-3 py-2"
-                  style={{
-                    borderColor: colors.ring,
-                    backgroundColor: colors.hover,
-                    color: colors.text,
-                  }}
-                  value={form?.email || ""}
-                  onChange={(e) => patch("email", e.target.value)}
-                />
-                {errors.email && (
-                  <div className="text-xs mt-1 text-red-400">
-                    {errors.email}
-                  </div>
-                )}
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm">
-                  <span
-                    className="block text-xs mb-1"
-                    style={{ color: colors.text2 }}
-                  >
-                    Role
-                  </span>
-                  <select
-                    className="w-full rounded-xl border px-3 py-2"
+            <div className="space-y-5">
+              <div className="flex items-center gap-4">
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt={form?.fullName || "User avatar"}
+                    className="w-20 h-20 rounded-full object-cover border"
+                    style={{ borderColor: colors.ring }}
+                  />
+                ) : (
+                  <div
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-lg font-semibold border"
                     style={{
                       borderColor: colors.ring,
                       backgroundColor: colors.hover,
                       color: colors.text,
                     }}
-                    value={form?.role || "driver"}
-                    onChange={(e) => patch("role", e.target.value)}
                   >
-                    <option value="driver">Driver</option>
-                    <option value="instructor">Instructor</option>
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                    {initials}
+                  </div>
+                )}
+
+                <div className="flex-1">
+                  <label
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer border text-sm font-medium"
+                    style={{
+                      borderColor: colors.ring,
+                      backgroundColor: colors.hover,
+                      color: colors.text,
+                    }}
+                  >
+                    <MdUpload size={18} />
+                    <span>Upload Avatar</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={onAvatarChange}
+                    />
+                  </label>
+
+                  <p className="text-xs mt-2" style={{ color: colors.text2 }}>
+                    JPG, PNG or WEBP image
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="block text-sm sm:col-span-2">
+                  <span
+                    className="block text-xs mb-1"
+                    style={{ color: colors.text2 }}
+                  >
+                    Full Name
+                  </span>
+                  <input
+                    className="w-full rounded-xl border px-3 py-2"
+                    style={{
+                      borderColor: errors.fullName ? "#EF4444" : colors.ring,
+                      backgroundColor: colors.hover,
+                      color: colors.text,
+                    }}
+                    value={form?.fullName || ""}
+                    onChange={(event) => patch("fullName", event.target.value)}
+                  />
+                  {errors.fullName ? (
+                    <div className="text-xs mt-1 text-red-400">
+                      {errors.fullName}
+                    </div>
+                  ) : null}
+                </label>
+
+                <label className="block text-sm sm:col-span-2">
+                  <span
+                    className="block text-xs mb-1"
+                    style={{ color: colors.text2 }}
+                  >
+                    Email
+                  </span>
+                  <input
+                    className="w-full rounded-xl border px-3 py-2"
+                    style={{
+                      borderColor: errors.email ? "#EF4444" : colors.ring,
+                      backgroundColor: colors.hover,
+                      color: colors.text,
+                    }}
+                    value={form?.email || ""}
+                    onChange={(event) => patch("email", event.target.value)}
+                  />
+                  {errors.email ? (
+                    <div className="text-xs mt-1 text-red-400">
+                      {errors.email}
+                    </div>
+                  ) : null}
+                </label>
+
+                <label className="block text-sm">
+                  <span
+                    className="block text-xs mb-1"
+                    style={{ color: colors.text2 }}
+                  >
+                    Phone
+                  </span>
+                  <input
+                    className="w-full rounded-xl border px-3 py-2"
+                    style={{
+                      borderColor: errors.phone ? "#EF4444" : colors.ring,
+                      backgroundColor: colors.hover,
+                      color: colors.text,
+                    }}
+                    value={form?.phone || ""}
+                    onChange={(event) => patch("phone", event.target.value)}
+                    placeholder="+92 300 1234567"
+                  />
+                  {errors.phone ? (
+                    <div className="text-xs mt-1 text-red-400">
+                      {errors.phone}
+                    </div>
+                  ) : null}
                 </label>
 
                 <label className="block text-sm">
@@ -175,43 +283,32 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
                       color: colors.text,
                     }}
                     value={form?.status || "active"}
-                    onChange={(e) => patch("status", e.target.value)}
+                    onChange={(event) => patch("status", event.target.value)}
                   >
                     <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
                     <option value="suspended">Suspended</option>
                   </select>
                 </label>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-3">
                 <label className="block text-sm">
                   <span
                     className="block text-xs mb-1"
                     style={{ color: colors.text2 }}
                   >
-                    Courses
+                    Date of Birth
                   </span>
                   <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                    type="date"
                     className="w-full rounded-xl border px-3 py-2"
                     style={{
                       borderColor: colors.ring,
                       backgroundColor: colors.hover,
                       color: colors.text,
                     }}
-                    value={String(form?.purchasedCourses ?? 0)}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/[^0-9]/g, "");
-                      patch("purchasedCourses", v === "" ? 0 : Number(v));
-                    }}
+                    value={form?.dob || ""}
+                    onChange={(event) => patch("dob", event.target.value)}
                   />
-                  {errors.purchasedCourses && (
-                    <div className="text-xs mt-1 text-red-400">
-                      {errors.purchasedCourses}
-                    </div>
-                  )}
                 </label>
 
                 <label className="block text-sm">
@@ -219,29 +316,19 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
                     className="block text-xs mb-1"
                     style={{ color: colors.text2 }}
                   >
-                    Chassis
+                    Location
                   </span>
                   <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
                     className="w-full rounded-xl border px-3 py-2"
                     style={{
                       borderColor: colors.ring,
                       backgroundColor: colors.hover,
                       color: colors.text,
                     }}
-                    value={String(form?.chassisUses ?? 0)}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/[^0-9]/g, "");
-                      patch("chassisUses", v === "" ? 0 : Number(v));
-                    }}
+                    value={form?.location || ""}
+                    onChange={(event) => patch("location", event.target.value)}
+                    placeholder="City, Country"
                   />
-                  {errors.chassisUses && (
-                    <div className="text-xs mt-1 text-red-400">
-                      {errors.chassisUses}
-                    </div>
-                  )}
                 </label>
               </div>
             </div>
@@ -260,14 +347,16 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
               >
                 Cancel
               </button>
+
               <button
                 onClick={async () => {
                   if (!validate()) return;
+
                   try {
                     setSaving(true);
                     await onSave?.(form);
-                  } catch (err) {
-                    console.error("Save failed", err);
+                  } catch (error) {
+                    console.error("Save failed", error);
                   } finally {
                     setSaving(false);
                   }
@@ -285,8 +374,8 @@ export default function UserEditorModal({ isOpen, onClose, user, onSave }) {
       </div>,
       document.body
     );
-  } catch (err) {
-    console.error("UserEditorModal render error:", err);
+  } catch (error) {
+    console.error("UserEditorModal render error:", error);
     return null;
   }
 }
