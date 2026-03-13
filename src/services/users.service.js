@@ -173,7 +173,11 @@ async function getFunctionErrorMessage(error, fallback) {
   if (error?.context) {
     try {
       const payload = await error.context.json();
-      const message = payload?.error || payload?.message;
+      const message =
+        payload?.message ||
+        payload?.error ||
+        payload?.details?.message ||
+        payload?.data?.message;
       if (message) {
         return normaliseUserErrorMessage({ message }, fallback);
       }
@@ -222,7 +226,16 @@ async function createManagedUser(payload) {
     );
   }
 
-  const createdRow = data?.user || data;
+  if (data?.success === false) {
+    throw new Error(
+      normaliseUserErrorMessage(
+        { message: data?.message || "Could not create the user account." },
+        "Could not create the user account."
+      )
+    );
+  }
+
+  const createdRow = data?.data?.user || data?.user || data?.data || data;
   if (!createdRow?.id) {
     throw new Error("Could not create the user account.");
   }

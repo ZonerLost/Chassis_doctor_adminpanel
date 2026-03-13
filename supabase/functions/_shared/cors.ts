@@ -1,16 +1,9 @@
 /*
  * Shared CORS policy helpers used by Supabase edge functions in this workspace.
- * Provides a single source of truth for allowed origins and request headers.
+ * Provides a single source of truth for allowed origins, headers, and methods.
  */
 
-const LOCAL_ALLOWED_ORIGINS = ["http://localhost:5174"];
-const ALLOWED_HEADERS = [
-  "authorization",
-  "x-client-info",
-  "apikey",
-  "content-type",
-];
-const ALLOWED_METHODS = ["OPTIONS", "POST"];
+const STATIC_ALLOWED_ORIGINS = ["http://localhost:5174", "http://localhost:5173"];
 const ORIGIN_ENV_KEYS = [
   "ALLOWED_ORIGINS",
   "SUPABASE_ALLOWED_ORIGINS",
@@ -24,8 +17,17 @@ const ORIGIN_ENV_KEYS = [
   "VITE_APP_URL",
 ];
 
-function normalizeOrigin(value: string) {
-  return value.trim().replace(/\/+$/, "");
+export const ALLOWED_HEADERS = [
+  "authorization",
+  "x-client-info",
+  "apikey",
+  "content-type",
+];
+
+export const ALLOWED_METHODS = ["POST", "OPTIONS"];
+
+function normalizeOrigin(value: string | null | undefined) {
+  return String(value || "").trim().replace(/\/+$/, "");
 }
 
 function getOriginsFromEnv() {
@@ -37,54 +39,29 @@ function getOriginsFromEnv() {
   );
 }
 
-export function getAllowedOrigins() {
-  return Array.from(
-    new Set([...LOCAL_ALLOWED_ORIGINS, ...getOriginsFromEnv()])
-  );
+export const ALLOWED_ORIGINS = Array.from(
+  new Set([...STATIC_ALLOWED_ORIGINS, ...getOriginsFromEnv()])
+);
+
+const DEFAULT_ALLOW_ORIGIN = ALLOWED_ORIGINS[0] || "http://localhost:5174";
+
+export function isAllowedOrigin(origin: string | null | undefined) {
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (!normalizedOrigin) return false;
+  return ALLOWED_ORIGINS.includes(normalizedOrigin);
 }
 
-export function resolveAllowedOrigin(request: Request) {
-  const requestOrigin = normalizeOrigin(request.headers.get("Origin") || "");
-  if (!requestOrigin) {
-    return null;
-  }
+export function getCorsHeaders(origin: string | null | undefined) {
+  const normalizedOrigin = normalizeOrigin(origin);
+  const allowOrigin = isAllowedOrigin(normalizedOrigin)
+    ? normalizedOrigin
+    : DEFAULT_ALLOW_ORIGIN;
 
-  return getAllowedOrigins().includes(requestOrigin) ? requestOrigin : null;
-}
-
-export function buildCorsHeaders(request: Request) {
-  const allowedOrigin = resolveAllowedOrigin(request);
-  const headers = new Headers({
+  return new Headers({
+    "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Headers": ALLOWED_HEADERS.join(", "),
     "Access-Control-Allow-Methods": ALLOWED_METHODS.join(", "),
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
-  });
-
-  if (allowedOrigin) {
-    headers.set("Access-Control-Allow-Origin", allowedOrigin);
-  }
-
-  return headers;
-}
-
-export function optionsWithCors(request: Request) {
-  return new Response(null, {
-    status: 204,
-    headers: buildCorsHeaders(request),
-  });
-}
-
-export function jsonWithCors(
-  request: Request,
-  body: Record<string, unknown>,
-  status = 200
-) {
-  const headers = buildCorsHeaders(request);
-  headers.set("Content-Type", "application/json");
-
-  return new Response(JSON.stringify(body), {
-    status,
-    headers,
   });
 }
