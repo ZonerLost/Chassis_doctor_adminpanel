@@ -1,3 +1,8 @@
+/*
+ * Authentication page for the forgot password stage of the admin sign-in lifecycle.
+ * Coordinates user actions with auth services while preserving route-level UX expectations.
+ */
+
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdEmail, MdLockReset } from "react-icons/md";

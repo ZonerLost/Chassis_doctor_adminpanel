@@ -1,4 +1,9 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+/*
+ * Authentication page for the login stage of the admin sign-in lifecycle.
+ * Coordinates user actions with auth services while preserving route-level UX expectations.
+ */
+
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   MdCheckCircle,

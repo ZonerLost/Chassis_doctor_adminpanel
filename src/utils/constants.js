@@ -1,3 +1,8 @@
+/*
+ * Utility module for constants helpers reused across services and UI features.
+ * Applies consistent data normalization and formatting rules throughout the app.
+ */
+
 export const DEFAULT_PAGE_SIZES = [10, 25, 50];
 
 export const TABLE_COLORS = {

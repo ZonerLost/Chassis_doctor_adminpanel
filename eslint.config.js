@@ -1,3 +1,8 @@
+/*
+ * Centralized ESLint configuration for the admin frontend codebase.
+ * Keeps linting rules consistent across hooks, components, and service modules.
+ */
+
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

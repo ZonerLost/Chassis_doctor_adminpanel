@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates media state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useEffect, useState, useCallback } from "react";
 import { listMedia, upsertMedia } from "../data/courses.service";
 

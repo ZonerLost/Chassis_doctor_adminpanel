@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates exports state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { downloadAnalyticsReport } from "../services/analytics.service";

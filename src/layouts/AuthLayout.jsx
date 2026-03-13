@@ -1,3 +1,8 @@
+/*
+ * Layout shell that defines the shared structure for auth layout screens.
+ * Keeps common navigation and frame concerns separate from page-specific content.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 

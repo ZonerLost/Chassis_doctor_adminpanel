@@ -1,3 +1,8 @@
+/*
+ * Doctor Section Card component for chassis doctor surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 

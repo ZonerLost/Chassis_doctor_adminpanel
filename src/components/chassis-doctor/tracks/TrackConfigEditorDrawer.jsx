@@ -1,3 +1,8 @@
+/*
+ * Track Config Editor Drawer component for chassis doctor surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "../../../contexts/ThemeContext";

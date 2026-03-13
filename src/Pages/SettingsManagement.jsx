@@ -1,3 +1,8 @@
+/*
+ * Page container for settings management workflows in the admin interface.
+ * Composes feature hooks and presentational components at the route boundary.
+ */
+
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {

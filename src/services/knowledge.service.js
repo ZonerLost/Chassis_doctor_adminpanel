@@ -1,3 +1,8 @@
+/*
+ * Service layer for knowledge data access, shaping, and error translation.
+ * Centralizes API interaction details so UI components remain focused on presentation logic.
+ */
+
 import { CATEGORIES, ARTICLES, REVISIONS } from "./knowledge.fixtures";
 
 const sleep = (ms = 120) => new Promise((r) => setTimeout(r, ms));

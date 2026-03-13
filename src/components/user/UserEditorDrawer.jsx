@@ -1,3 +1,8 @@
+/*
+ * User Editor Drawer component for user surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React, { useEffect, useState } from "react";
 import { COLORS } from "../ui/shared/theme.js";
 

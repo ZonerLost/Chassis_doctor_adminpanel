@@ -1,3 +1,8 @@
+/*
+ * Fixture payloads for users scenarios used in local and fallback rendering paths.
+ * Keeps mocked data shapes aligned with service contracts consumed by feature modules.
+ */
+
 export const USERS_FIXTURES = Array.from({ length: 57 }).map((_, i) => {
   const roles = ["driver", "instructor", "admin", "staff"];
   const role = roles[i % roles.length];

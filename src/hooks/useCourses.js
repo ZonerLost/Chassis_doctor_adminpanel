@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates courses state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   listCourses,

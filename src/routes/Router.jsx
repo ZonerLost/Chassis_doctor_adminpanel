@@ -1,4 +1,8 @@
-/* eslint-disable no-unused-vars */
+/*
+ * Route map definition for public and authenticated admin application paths.
+ * Keeps navigation flow explicit and colocated with access-control boundaries.
+ */
+
 import React, { Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";

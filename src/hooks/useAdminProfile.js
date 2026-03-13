@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates admin profile state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useEffect, useState } from "react";
 import { getCurrentAdminProfile } from "../services/settings.service";
 import {
@@ -22,6 +27,7 @@ function readCachedAdminProfile() {
 }
 
 function fetchAdminProfileOnce() {
+  // Deduplicate concurrent requests so multiple consumers do not trigger duplicate reads.
   if (!profileRequest) {
     profileRequest = getCurrentAdminProfile().finally(() => {
       profileRequest = null;
@@ -57,6 +63,7 @@ export default function useAdminProfile() {
         if (active) setLoading(false);
       });
 
+    // Listen for explicit profile updates and cross-tab storage changes.
     const handleProfileUpdate = (event) => {
       syncFromCache(event?.detail || null);
     };

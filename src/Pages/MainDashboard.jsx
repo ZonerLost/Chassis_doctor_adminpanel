@@ -1,3 +1,8 @@
+/*
+ * Page container for main dashboard workflows in the admin interface.
+ * Composes feature hooks and presentational components at the route boundary.
+ */
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bar,
@@ -431,6 +436,7 @@ export default function MainDashboard() {
     loadDashboard();
   }, [loadDashboard]);
 
+  // Keep tile definitions derived from a single response payload to avoid duplicated UI state.
   const kpiItems = useMemo(
     () => [
       {

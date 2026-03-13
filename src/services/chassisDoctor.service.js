@@ -1,3 +1,8 @@
+/*
+ * Service layer for chassis doctor data access, shaping, and error translation.
+ * Centralizes API interaction details so UI components remain focused on presentation logic.
+ */
+
 import { supabase } from "../lib/supabaseClient";
 
 const TABLES = {

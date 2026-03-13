@@ -1,3 +1,8 @@
+/*
+ * Page container for knowledge base management workflows in the admin interface.
+ * Composes feature hooks and presentational components at the route boundary.
+ */
+
 import React, { useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useCategories } from "../hooks/useCategories";

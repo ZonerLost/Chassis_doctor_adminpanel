@@ -1,3 +1,8 @@
+/*
+ * Doctor Modal component for chassis doctor surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MdClose } from "react-icons/md";

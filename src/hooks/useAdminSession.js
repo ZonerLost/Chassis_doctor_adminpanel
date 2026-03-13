@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates admin session state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useEffect, useState } from "react";
 import {
   bootstrapAdminSession,
@@ -13,6 +18,7 @@ export default function useAdminSession() {
   useEffect(() => {
     let active = true;
 
+    // Rehydrate the session on mount and on every auth state transition.
     const syncSession = async () => {
       try {
         const admin = await bootstrapAdminSession();

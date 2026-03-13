@@ -1,4 +1,8 @@
-/* eslint-disable no-undef */
+/*
+ * Validation script that checks file naming and path-case consistency rules.
+ * Helps prevent cross-platform import resolution issues in CI and local development.
+ */
+
 /* eslint-disable no-unused-vars */
 const fs = require("fs");
 const path = require("path");

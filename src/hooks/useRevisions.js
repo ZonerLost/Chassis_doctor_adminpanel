@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates revisions state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useEffect, useState } from "react";
 import { listRevisions } from "../data/knowledge.service";
 

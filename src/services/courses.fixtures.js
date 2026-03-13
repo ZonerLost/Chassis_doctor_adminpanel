@@ -1,3 +1,8 @@
+/*
+ * Fixture payloads for courses scenarios used in local and fallback rendering paths.
+ * Keeps mocked data shapes aligned with service contracts consumed by feature modules.
+ */
+
 export const COURSES = [
   {
     id: "crs_oval_mastery",

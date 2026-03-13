@@ -1,3 +1,8 @@
+/*
+ * Left Sidebar component for ui surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {

@@ -1,4 +1,8 @@
-/** @type {import('tailwindcss').Config} */
+/*
+ * Tailwind theme and content configuration for the admin panel UI.
+ * Defines design tokens and scan paths so utility classes compile reliably.
+ */
+
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],

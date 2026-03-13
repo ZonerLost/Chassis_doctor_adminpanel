@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates theme state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useContext } from "react";
 import { ThemeContext } from "../contexts/ThemeContext";
 

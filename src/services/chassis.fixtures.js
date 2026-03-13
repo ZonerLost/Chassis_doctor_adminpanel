@@ -1,3 +1,8 @@
+/*
+ * Fixture payloads for chassis scenarios used in local and fallback rendering paths.
+ * Keeps mocked data shapes aligned with service contracts consumed by feature modules.
+ */
+
 export const SYMPTOMS = [
   { id: "s1", name: "Entry Understeer", description: "Car pushes at turn-in." },
   {

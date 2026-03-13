@@ -1,3 +1,8 @@
+/*
+ * Service layer for auth data access, shaping, and error translation.
+ * Centralizes API interaction details so UI components remain focused on presentation logic.
+ */
+
 import { supabase } from "../lib/supabaseClient";
 import {
   clearPersistedAdminData,
@@ -27,6 +32,7 @@ export async function getCurrentSession() {
   return data.session || null;
 }
 
+/* Profile lookup is split out to keep auth/session and profile concerns testable. */
 export async function getProfileByUserId(userId) {
   const { data, error } = await supabase
     .from("users")
@@ -38,6 +44,10 @@ export async function getProfileByUserId(userId) {
   return data;
 }
 
+/*
+ * Restores an authenticated admin session and rejects non-admin profiles
+ * to enforce role-based access at bootstrap time.
+ */
 export async function bootstrapAdminSession() {
   try {
     const session = await getCurrentSession();
@@ -80,6 +90,7 @@ export async function signInAdmin({ email, password, remember }) {
 
     const profile = await getProfileByUserId(user.id);
 
+    // Admin panel access is explicitly limited by role, even if auth succeeds.
     if (!isAdminRole(profile?.role)) {
       await supabase.auth.signOut();
       throw new Error("You do not have admin access to this panel.");
@@ -107,6 +118,7 @@ export async function signOutAdmin() {
     const { error } = await supabase.auth.signOut();
     signOutError = error || null;
   } finally {
+    // Always clear local state, even if remote sign-out fails, to avoid stale UI sessions.
     clearPersistedAdminData();
   }
 

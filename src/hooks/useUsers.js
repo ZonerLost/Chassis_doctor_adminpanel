@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates users state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createUser,
@@ -23,6 +28,10 @@ export function useUsers() {
     [pageSize, total]
   );
 
+  /*
+   * Centralized loader so pagination, filters, and explicit reload actions
+   * share the same request path and state transition behavior.
+   */
   const load = useCallback(
     async (overrides = {}) => {
       const params = {
@@ -56,6 +65,7 @@ export function useUsers() {
     load().catch(() => {});
   }, [load]);
 
+  // Clamp current page if filters shrink the result set.
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
@@ -77,9 +87,13 @@ export function useUsers() {
     setPageSizeState(Number(value) || DEFAULT_PAGE_SIZE);
   };
 
+  // Create and update follow different back-end paths, but expose one UI action.
   const save = async (user) => {
     if (!user?.id) {
-      await createUser({ ...user, role: DEFAULT_NEW_USER_ROLE });
+      await createUser({
+        ...user,
+        role: user?.role || DEFAULT_NEW_USER_ROLE,
+      });
       if (page !== 1) {
         setPage(1);
       }

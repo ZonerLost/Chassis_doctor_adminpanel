@@ -1,3 +1,8 @@
+/*
+ * Utility module for icon helpers helpers reused across services and UI features.
+ * Applies consistent data normalization and formatting rules throughout the app.
+ */
+
 import { DEFAULT_PAGE_SIZES, STATUS_COLORS } from "../../utils/constants";
 import { Checkbox, StatusPill, Chip } from "../ui/common/TablePrimitives";
 // import { getTypeIcon } from "../../utils/iconHelpers";

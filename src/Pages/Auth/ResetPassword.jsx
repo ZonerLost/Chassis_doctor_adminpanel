@@ -1,3 +1,8 @@
+/*
+ * Authentication page for the reset password stage of the admin sign-in lifecycle.
+ * Coordinates user actions with auth services while preserving route-level UX expectations.
+ */
+
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdLock, MdLockReset, MdVisibility, MdVisibilityOff } from "react-icons/md";

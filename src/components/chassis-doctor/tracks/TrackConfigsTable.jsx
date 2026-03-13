@@ -1,3 +1,8 @@
+/*
+ * Track Configs Table component for chassis doctor surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React, { useMemo, useState } from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 

@@ -1,7 +1,16 @@
+/*
+ * Service layer for dashboard data access, shaping, and error translation.
+ * Centralizes API interaction details so UI components remain focused on presentation logic.
+ */
+
 import { supabase } from "../lib/supabaseClient";
 
 const FALLBACK_LABEL = "\u2014";
 
+/*
+ * Supported dashboard ranges and the metadata required to compute
+ * current and previous comparison windows.
+ */
 const RANGE_DEFINITIONS = {
   "7d": {
     label: "Last 7 days",
@@ -99,6 +108,7 @@ export const EMPTY_DASHBOARD_OVERVIEW = {
   lastUpdatedLabel: FALLBACK_LABEL,
 };
 
+/* Normalize Supabase errors so UI layers can render concise failure messages. */
 function createReadableError(fallbackMessage, error) {
   return new Error(error?.message || fallbackMessage);
 }
@@ -124,6 +134,7 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
+/* Defensive date parser used by all range and chart computations. */
 function parseDateSafe(value) {
   if (!value) return null;
 
@@ -236,6 +247,10 @@ function calculateChange(currentValue, previousValue) {
   return Number((((currentValue - previousValue) / previousValue) * 100).toFixed(1));
 }
 
+/*
+ * Builds the active reporting range and, when available, the matching
+ * previous window used for percentage change indicators.
+ */
 function resolveRangeConfig(range, now = new Date()) {
   const config = RANGE_DEFINITIONS[range] || RANGE_DEFINITIONS["30d"];
   const currentEndExclusive = new Date(now.getTime() + 1);
@@ -289,6 +304,10 @@ function collectValidDates(values) {
     .filter(Boolean);
 }
 
+/*
+ * Chooses chart boundaries dynamically so "all time" views still align
+ * to month buckets while constrained ranges honor their configured unit.
+ */
 function resolveBucketWindow(rangeConfig, values, now = new Date()) {
   if (rangeConfig.unit === "day") {
     return {
@@ -508,6 +527,7 @@ function mapReviewActivity(review, courseMap, now) {
   );
 }
 
+/* Data health chips summarize record availability across key entities. */
 function buildHealthItems({
   totalUsers,
   activeUsers,
@@ -546,6 +566,10 @@ function buildHealthItems({
   ];
 }
 
+/*
+ * Dashboard aggregator that fetches source tables in parallel, normalizes
+ * rows, and derives KPI, chart, and timeline payloads for the page layer.
+ */
 export async function getDashboardOverview({ range = "12m" } = {}) {
   const now = new Date();
   const rangeConfig = resolveRangeConfig(range, now);
@@ -680,6 +704,7 @@ export async function getDashboardOverview({ range = "12m" } = {}) {
     })),
   };
 
+  // Reuse a lookup map so activity entries can reference course metadata efficiently.
   const courseMap = new Map(courses.map((course) => [course.id, course]));
 
   const recentUsers = sortByDateDescending(
@@ -715,6 +740,7 @@ export async function getDashboardOverview({ range = "12m" } = {}) {
     mapReviewActivity(review, courseMap, now)
   );
 
+  // Merge heterogeneous activity events into a single time-ordered feed for the UI.
   const recentActivity = sortByDateDescending(
     [...signupActivity, ...loginActivity, ...courseActivity, ...reviewActivity].filter(
       Boolean

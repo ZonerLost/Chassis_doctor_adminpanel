@@ -1,3 +1,8 @@
+/*
+ * Page container for courses management workflows in the admin interface.
+ * Composes feature hooks and presentational components at the route boundary.
+ */
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   MdAdd,

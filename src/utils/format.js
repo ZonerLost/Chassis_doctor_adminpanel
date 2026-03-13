@@ -1,3 +1,8 @@
+/*
+ * Utility module for format helpers reused across services and UI features.
+ * Applies consistent data normalization and formatting rules throughout the app.
+ */
+
 export const fmtInt = (n) =>
   new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n || 0);
 

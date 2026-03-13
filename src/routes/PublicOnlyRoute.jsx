@@ -1,3 +1,8 @@
+/*
+ * Route guard that prevents authenticated users from revisiting public auth screens.
+ * Maintains a predictable sign-in flow by redirecting active sessions to app content.
+ */
+
 import React from "react";
 import { Navigate } from "react-router-dom";
 import useAdminSession from "../hooks/useAdminSession";

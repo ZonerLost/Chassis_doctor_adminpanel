@@ -1,3 +1,8 @@
+/*
+ * CLI utility for provisioning an initial admin account in Supabase environments.
+ * Standardizes local bootstrap steps so team setup remains predictable and repeatable.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";

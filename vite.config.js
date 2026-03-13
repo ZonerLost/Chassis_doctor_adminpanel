@@ -1,3 +1,8 @@
+/*
+ * Build and development server configuration for the Vite-based admin client.
+ * Controls bundling behavior and local dev defaults used by the project.
+ */
+
 import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";

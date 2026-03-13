@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates articles state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useEffect, useState } from "react";
 import { listArticles, upsertArticle } from "../services/knowledge.service";
 

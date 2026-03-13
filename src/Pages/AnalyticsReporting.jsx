@@ -1,3 +1,8 @@
+/*
+ * Page container for analytics reporting workflows in the admin interface.
+ * Composes feature hooks and presentational components at the route boundary.
+ */
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import SectionCard from "../components/ui/common/SectionCard";

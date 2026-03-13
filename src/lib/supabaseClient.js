@@ -1,3 +1,8 @@
+/*
+ * Supabase client initialization and environment-based configuration for browser calls.
+ * Exposes a single shared client instance to keep auth and session behavior consistent.
+ */
+
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

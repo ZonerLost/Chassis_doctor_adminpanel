@@ -1,3 +1,8 @@
+/*
+ * Page container for user management workflows in the admin interface.
+ * Composes feature hooks and presentational components at the route boundary.
+ */
+
 import React, { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { MdPersonAdd } from "react-icons/md";
@@ -63,6 +68,11 @@ const UserManagement = () => {
     setEditorOpen(true);
   };
 
+  const closeEditor = () => {
+    setEditorOpen(false);
+    setEditingUser(null);
+  };
+
   const closeDeleteModal = () => {
     if (isDeleting) return;
 
@@ -80,7 +90,7 @@ const UserManagement = () => {
   const handleSave = async (form) => {
     const isCreate = !form?.id;
     const normalizedForm = isCreate
-      ? { ...form, role: DEFAULT_NEW_USER_ROLE }
+      ? { ...form, role: form?.role || DEFAULT_NEW_USER_ROLE }
       : { ...form, role: undefined };
 
     try {
@@ -88,16 +98,13 @@ const UserManagement = () => {
       toast.success(
         isCreate ? "User added successfully." : "User updated successfully."
       );
-      setEditorOpen(false);
+      closeEditor();
     } catch (error) {
-      console.error(
-        isCreate ? "Failed to create user:" : "Failed to update user:",
-        error
-      );
       toast.error(
-        isCreate
-          ? "Could not add user. Please try again."
-          : "Could not update user. Please try again."
+        error?.message ||
+          (isCreate
+            ? "Could not add user. Please try again."
+            : "Could not update user. Please try again.")
       );
     }
   };
@@ -275,7 +282,7 @@ const UserManagement = () => {
         <UserEditorModal
           isOpen={editorOpen}
           user={editingUser}
-          onClose={() => setEditorOpen(false)}
+          onClose={closeEditor}
           onSave={handleSave}
         />
       ) : null}

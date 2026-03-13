@@ -1,3 +1,8 @@
+/*
+ * Fixture payloads for knowledge scenarios used in local and fallback rendering paths.
+ * Keeps mocked data shapes aligned with service contracts consumed by feature modules.
+ */
+
 export const CATEGORIES = [
   { id: "cat_susp", name: "Suspension" },
   { id: "cat_tyres", name: "Tyres" },

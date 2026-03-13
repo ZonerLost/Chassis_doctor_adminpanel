@@ -1,9 +1,15 @@
+/*
+ * Service layer for users data access, shaping, and error translation.
+ * Centralizes API interaction details so UI components remain focused on presentation logic.
+ */
+
 import { supabase } from "../lib/supabaseClient";
 
 const USER_AVATAR_BUCKET =
   import.meta.env.VITE_SUPABASE_USER_AVATAR_BUCKET || "user-avatars";
 const DEFAULT_NEW_USER_ROLE = "parent";
 const EXCLUDED_USER_ROLE = "system_admin";
+const CREATE_USER_FUNCTION_NAME = "admin-create-user";
 
 const USER_SELECT = [
   "id",
@@ -19,6 +25,7 @@ const USER_SELECT = [
   "last_login_at",
 ].join(", ");
 
+/* Shared input normalizers keep payload formatting consistent for create/update flows. */
 function trimToNull(value) {
   const normalized = String(value ?? "").trim();
   return normalized || null;
@@ -42,6 +49,36 @@ function sanitizeSearchTerm(value) {
     .replace(/[,%()]/g, " ");
 }
 
+/*
+ * Maps low-level Supabase or edge-function errors to user-facing copy
+ * that is specific enough for admins to recover quickly.
+ */
+function normaliseUserErrorMessage(error, fallback = "Something went wrong.") {
+  const message =
+    error?.message ||
+    error?.error_description ||
+    error?.msg ||
+    fallback;
+
+  const known = {
+    "User already registered": "This email address is already in use.",
+    "A user with this email address has already been registered":
+      "This email address is already in use.",
+    "Auth session missing!":
+      "Your session is missing or expired. Please sign in again.",
+    "Failed to send a request to the Edge Function":
+      "Could not reach the user creation service. If you are testing locally, confirm the deployed Edge Function allows your frontend origin.",
+    "Edge Function returned a non-2xx status code":
+      "Could not create the user account.",
+    "Origin is not allowed to access this function.":
+      "This frontend origin is not allowed to create users.",
+    "Server configuration is incomplete for admin-create-user.":
+      "The user creation service is not configured correctly.",
+  };
+
+  return known[message] || message;
+}
+
 function mapUserRow(row = {}) {
   return {
     id: row.id,
@@ -57,6 +94,10 @@ function mapUserRow(row = {}) {
   };
 }
 
+/*
+ * Builds a database-safe payload and intentionally omits undefined values
+ * so partial updates never overwrite existing fields with invalid data.
+ */
 function buildUserPayload(payload = {}, { isUpdate = false } = {}) {
   const normalizedRole = trimToNull(payload.role);
   const nextPayload = {
@@ -124,6 +165,71 @@ async function updateUserAvatarUrl(userId, avatarUrl) {
   return data;
 }
 
+/*
+ * Edge function failures may include structured JSON or plain text bodies.
+ * This parser checks both paths before falling back to generic handling.
+ */
+async function getFunctionErrorMessage(error, fallback) {
+  if (error?.context) {
+    try {
+      const payload = await error.context.json();
+      const message = payload?.error || payload?.message;
+      if (message) {
+        return normaliseUserErrorMessage({ message }, fallback);
+      }
+    } catch {
+      // ignore JSON parse errors for function responses
+    }
+
+    try {
+      const message = await error.context.text();
+      if (message) {
+        return normaliseUserErrorMessage({ message }, fallback);
+      }
+    } catch {
+      // ignore text parse errors for function responses
+    }
+  }
+
+  return normaliseUserErrorMessage(error, fallback);
+}
+
+/* Uses a server-side function so privileged user creation stays off the client. */
+async function createManagedUser(payload) {
+  const requestPayload = {
+    fullName: trimToNull(payload.fullName),
+    email: trimToNull(payload.email),
+    phone: trimToNull(payload.phone),
+    status: trimToNull(payload.status) || "active",
+    dob: normalizeDateOnly(payload.dob),
+    location: trimToNull(payload.location),
+    avatarUrl: !payload.avatarFile ? trimToNull(payload.avatarUrl) : null,
+    password: String(payload.password || ""),
+    confirmPassword: String(payload.confirmPassword || ""),
+    role: trimToNull(payload.role) || DEFAULT_NEW_USER_ROLE,
+  };
+
+  const { data, error } = await supabase.functions.invoke(
+    CREATE_USER_FUNCTION_NAME,
+    {
+      body: requestPayload,
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      await getFunctionErrorMessage(error, "Could not create the user account.")
+    );
+  }
+
+  const createdRow = data?.user || data;
+  if (!createdRow?.id) {
+    throw new Error("Could not create the user account.");
+  }
+
+  return createdRow;
+}
+
 export async function listUsers({
   page = 1,
   pageSize = 15,
@@ -135,6 +241,7 @@ export async function listUsers({
   const from = (safePage - 1) * safePageSize;
   const to = from + safePageSize - 1;
 
+  // Compose filters incrementally so optional query/status inputs stay independent.
   let request = supabase
     .from("users")
     .select(USER_SELECT, { count: "exact" })
@@ -169,23 +276,17 @@ export async function listUsers({
 export async function createUser(payload) {
   const normalizedPayload = {
     ...payload,
-    role: DEFAULT_NEW_USER_ROLE,
+    role: trimToNull(payload?.role) || DEFAULT_NEW_USER_ROLE,
   };
-  const dbPayload = buildUserPayload(normalizedPayload);
 
-  const { data, error } = await supabase
-    .from("users")
-    .insert(dbPayload)
-    .select(USER_SELECT)
-    .single();
-
-  if (error) throw error;
-
-  let nextRow = data;
+  let nextRow = await createManagedUser(normalizedPayload);
 
   if (normalizedPayload?.avatarFile) {
-    const avatarUrl = await uploadUserAvatar(data.id, normalizedPayload.avatarFile);
-    nextRow = await updateUserAvatarUrl(data.id, avatarUrl);
+    const avatarUrl = await uploadUserAvatar(
+      nextRow.id,
+      normalizedPayload.avatarFile
+    );
+    nextRow = await updateUserAvatarUrl(nextRow.id, avatarUrl);
   }
 
   return mapUserRow(nextRow);

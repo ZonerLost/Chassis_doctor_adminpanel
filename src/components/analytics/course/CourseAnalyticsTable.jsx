@@ -1,3 +1,8 @@
+/*
+ * Course Analytics Table component for analytics surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React, { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 import AnalyticsStatCard from "../shared/AnalyticsStatCard";

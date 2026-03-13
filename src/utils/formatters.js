@@ -1,3 +1,8 @@
+/*
+ * Utility module for formatters helpers reused across services and UI features.
+ * Applies consistent data normalization and formatting rules throughout the app.
+ */
+
 export const fmtPKR = (cents) => {
   const rs = (Number(cents) || 0) / 100;
   try {

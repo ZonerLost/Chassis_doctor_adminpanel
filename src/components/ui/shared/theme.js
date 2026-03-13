@@ -1,3 +1,8 @@
+/*
+ * Shared theme token definitions consumed by layout and component styling layers.
+ * Keeps palette and semantic color values centralized across the admin experience.
+ */
+
 export const DARK_COLORS = {
   bg: "#0B0B0F",
   bg2: "#12131A",

@@ -1,3 +1,8 @@
+/*
+ * Custom hook that encapsulates body scroll lock state, side effects, and async workflows.
+ * Provides a reusable boundary between domain operations and page-level UI orchestration.
+ */
+
 import { useLayoutEffect } from "react";
 
 let activeLocks = 0;

@@ -1,3 +1,8 @@
+/*
+ * Utility module for auth helpers reused across services and UI features.
+ * Applies consistent data normalization and formatting rules throughout the app.
+ */
+
 export const AUTH_PROFILE_STORAGE_KEY = "motorsport-admin-auth";
 export const AUTH_REMEMBER_EMAIL_KEY = "motorsport-admin-remember-email";
 export const SUPABASE_AUTH_STORAGE_KEY = "motorsport-admin-supabase-auth";

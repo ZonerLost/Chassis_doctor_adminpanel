@@ -1,3 +1,8 @@
+/*
+ * Engagement Sparkline component for analytics surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React, { useMemo } from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 

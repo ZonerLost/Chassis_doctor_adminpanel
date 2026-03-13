@@ -1,3 +1,8 @@
+/*
+ * Layout shell that defines the shared structure for dashboard layout screens.
+ * Keeps common navigation and frame concerns separate from page-specific content.
+ */
+
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import LeftSidebar from "../components/ui/section/LeftSidebar";

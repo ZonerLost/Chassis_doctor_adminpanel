@@ -1,3 +1,8 @@
+/*
+ * Confirm Modal component for ui surfaces within the admin interface.
+ * Keeps rendering behavior isolated so higher-level modules can focus on data flow.
+ */
+
 import React from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "../../../contexts/ThemeContext";

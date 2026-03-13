@@ -1,4 +1,8 @@
-/* eslint-disable react-refresh/only-export-components */
+/*
+ * Theme context provider that exposes palette tokens and theme switching controls.
+ * Ensures visual state is propagated consistently across all dashboard surfaces.
+ */
+
 import React, { createContext, useState, useEffect, useContext } from "react";
 import {
   DARK_COLORS,

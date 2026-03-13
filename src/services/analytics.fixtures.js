@@ -1,3 +1,8 @@
+/*
+ * Fixture payloads for analytics scenarios used in local and fallback rendering paths.
+ * Keeps mocked data shapes aligned with service contracts consumed by feature modules.
+ */
+
 export const DAILY_ENGAGEMENT = [
   // date (YYYY-MM-DD), active users, retention7d %, module usage splits
   { d: "2025-09-01", au: 120, r7: 38, courses: 60, chassis: 40 },
