@@ -1,27 +1,68 @@
 import React from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 
-export default function SystemHealth({ health = {} }) {
+export default function SystemHealth({ items = [] }) {
   const { colors } = useTheme();
 
-  const Row = ({ name, s }) => (
-    <div className="flex items-center justify-between py-2">
-      <div style={{ color: colors.text }}>{name}</div>
-      <div style={{ color: s.status === "Operational" ? colors.accent : colors.text2, fontSize: 13 }}>
-        {s.status} {s.incidents ? `• ${s.incidents} issues` : ""}
-      </div>
-    </div>
-  );
-
   return (
-    <div className="p-4 rounded-2xl border" style={{ backgroundColor: colors.bg2, borderColor: colors.ring }}>
-      <div className="text-sm font-semibold mb-3" style={{ color: colors.text }}>System Health</div>
-      <div>
-        {Object.entries(health).map(([k, v]) => (
-          <Row key={k} name={k.replace(/([-_])/g, " ")} s={v} />
-        ))}
-        {Object.keys(health).length === 0 && <div style={{ color: colors.text2 }}>No status available</div>}
+    <div
+      className="rounded-2xl border p-4"
+      style={{ backgroundColor: colors.bg2, borderColor: colors.ring }}
+    >
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="text-sm font-semibold" style={{ color: colors.text }}>
+          Data Health
+        </div>
+        <div className="text-xs" style={{ color: colors.text2 }}>
+          Users, content and feedback
+        </div>
       </div>
+
+      {items.length === 0 ? (
+        <div className="text-sm" style={{ color: colors.text2 }}>
+          No health data found.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item) => {
+            const isHealthy = item.status === "Healthy";
+
+            return (
+              <div
+                key={item.key}
+                className="flex items-center justify-between gap-3 rounded-xl p-3"
+                style={{
+                  backgroundColor: colors.card || colors.hover,
+                  border: `1px solid ${colors.ring}`,
+                }}
+              >
+                <div className="min-w-0">
+                  <div
+                    className="text-sm font-medium capitalize"
+                    style={{ color: colors.text }}
+                  >
+                    {item.label}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: colors.text2 }}>
+                    {item.meta}
+                  </div>
+                </div>
+
+                <div
+                  className="text-xs px-2.5 py-1 rounded-full whitespace-nowrap"
+                  style={{
+                    color: isHealthy ? colors.accent : "#f59e0b",
+                    border: `1px solid ${colors.ring}`,
+                    backgroundColor: colors.hover,
+                  }}
+                >
+                  {item.status}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

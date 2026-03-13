@@ -39,7 +39,8 @@ export default function DoctorButton({
     <button
       type={type}
       disabled={isDisabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed ${className}`}
+      aria-busy={loading}
+      className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed ${className}`}
       style={{
         ...styles,
         opacity: isDisabled ? 0.65 : 1,

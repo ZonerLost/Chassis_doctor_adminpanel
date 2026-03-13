@@ -9,6 +9,11 @@ const INITIAL_STATE = {
   category: "Other",
 };
 
+const INITIAL_ERRORS = {
+  title: "",
+  details: "",
+};
+
 const CATEGORIES = ["Understeer", "Oversteer", "Braking", "Balance", "Other"];
 
 export default function CreateRecommendationModal({
@@ -19,19 +24,41 @@ export default function CreateRecommendationModal({
 }) {
   const { colors } = useTheme();
   const [form, setForm] = useState(INITIAL_STATE);
+  const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   useEffect(() => {
-    if (isOpen) {
-      setForm(INITIAL_STATE);
-    }
+    if (!isOpen) return;
+
+    setForm(INITIAL_STATE);
+    setErrors(INITIAL_ERRORS);
   }, [isOpen]);
+
+  const handleClose = () => {
+    if (loading) return;
+    onClose?.();
+  };
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: "" }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const nextErrors = {
+      title: form.title.trim() ? "" : "Recommendation title is required.",
+      details: form.details.trim() ? "" : "Recommendation details are required.",
+    };
+
+    if (nextErrors.title || nextErrors.details) {
+      setErrors(nextErrors);
+      return;
+    }
+
     const shouldClose = await onSubmit?.({
-      title: form.title,
-      details: form.details,
+      title: form.title.trim(),
+      details: form.details.trim(),
       category: form.category,
     });
 
@@ -43,7 +70,7 @@ export default function CreateRecommendationModal({
   return (
     <DoctorModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Create Recommendation"
       subtitle="Add a reusable chassis recommendation that can be attached to a set."
       footer={
@@ -51,7 +78,8 @@ export default function CreateRecommendationModal({
           <DoctorButton
             variant="secondary"
             className="flex-1"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={loading}
           >
             Cancel
           </DoctorButton>
@@ -61,7 +89,7 @@ export default function CreateRecommendationModal({
             className="flex-1"
             loading={loading}
           >
-            Create Recommendation
+            Save Recommendation
           </DoctorButton>
         </div>
       }
@@ -82,17 +110,22 @@ export default function CreateRecommendationModal({
             type="text"
             value={form.title}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, title: e.target.value }))
+              updateField("title", e.target.value)
             }
             className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
             style={{
               backgroundColor: colors.bg2,
-              border: `1px solid ${colors.ring}`,
+              border: `1px solid ${errors.title ? colors.danger : colors.ring}`,
               color: colors.text,
             }}
             placeholder="e.g. Increase rear wing by 2 clicks"
-            required
+            aria-invalid={Boolean(errors.title)}
           />
+          {errors.title ? (
+            <p className="mt-1.5 text-xs" style={{ color: colors.danger }}>
+              {errors.title}
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -105,17 +138,22 @@ export default function CreateRecommendationModal({
           <textarea
             value={form.details}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, details: e.target.value }))
+              updateField("details", e.target.value)
             }
             className="h-28 w-full rounded-xl px-3 py-2.5 text-sm outline-none"
             style={{
               backgroundColor: colors.bg2,
-              border: `1px solid ${colors.ring}`,
+              border: `1px solid ${errors.details ? colors.danger : colors.ring}`,
               color: colors.text,
             }}
             placeholder="Explain the recommendation clearly..."
-            required
+            aria-invalid={Boolean(errors.details)}
           />
+          {errors.details ? (
+            <p className="mt-1.5 text-xs" style={{ color: colors.danger }}>
+              {errors.details}
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -128,7 +166,7 @@ export default function CreateRecommendationModal({
           <select
             value={form.category}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, category: e.target.value }))
+              updateField("category", e.target.value)
             }
             className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
             style={{

@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-unsafe-finally */
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
@@ -14,15 +12,19 @@ import {
   MdTune,
   MdWarningAmber,
 } from "react-icons/md";
-import { useTheme } from "../contexts/ThemeContext";
-import DoctorButton from "../components/chassis-doctor/shared/DoctorButton";
-import DoctorSectionCard from "../components/chassis-doctor/shared/DoctorSectionCard";
 import CreateAdjustmentSetModal from "../components/chassis-doctor/modals/CreateAdjustmentSetModal";
 import CreateRecommendationModal from "../components/chassis-doctor/modals/CreateRecommendationModal";
+import CreateSymptomModal from "../components/chassis-doctor/modals/CreateSymptomModal";
+import DoctorButton from "../components/chassis-doctor/shared/DoctorButton";
+import DoctorEmptyState from "../components/chassis-doctor/shared/DoctorEmptyState";
+import DoctorSectionCard from "../components/chassis-doctor/shared/DoctorSectionCard";
+import { useTheme } from "../contexts/ThemeContext";
+import useAdminSession from "../hooks/useAdminSession";
 import {
   attachRecommendationToSet,
   createAdjustmentSet,
   createRecommendation,
+  createSymptom,
   getLinkedIssueIds,
   getLinkedPresetIds,
   getRecommendationsForSet,
@@ -43,6 +45,7 @@ const INITIAL_LOADING = {
   recommendations: false,
   setContext: false,
   presets: false,
+  createSymptom: false,
   createSet: false,
   createRecommendation: false,
   saveIssues: false,
@@ -50,41 +53,6 @@ const INITIAL_LOADING = {
   savePresets: false,
   removeRecommendation: false,
 };
-
-function EmptyState({ icon: Icon, title, description, colors }) {
-  return (
-    <div
-      className="rounded-2xl p-5 text-center"
-      style={{
-        backgroundColor: colors.card || colors.bg,
-        border: `1px dashed ${colors.ring}`,
-      }}
-    >
-      {Icon ? (
-        <div className="mb-3 flex justify-center">
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-full"
-            style={{
-              backgroundColor: `${colors.accent}20`,
-              color: colors.accent,
-            }}
-          >
-            <Icon size={22} />
-          </div>
-        </div>
-      ) : null}
-
-      <h3 className="text-sm font-semibold" style={{ color: colors.text }}>
-        {title}
-      </h3>
-      {description ? (
-        <p className="mt-1 text-sm" style={{ color: colors.text2 }}>
-          {description}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 function InlineLoader({ label, colors }) {
   return (
@@ -107,7 +75,7 @@ function SelectField({
   onChange,
   options,
   placeholder,
-  disabled,
+  disabled = false,
   colors,
 }) {
   return (
@@ -150,7 +118,9 @@ function ChoiceChip({ label, selected, onClick, colors }) {
   );
 }
 
-function SummaryPill({ icon: Icon, label, value, colors }) {
+function SummaryPill({ icon, label, value, colors }) {
+  const Icon = icon;
+
   return (
     <div
       className="flex items-center gap-2 rounded-xl px-3 py-2"
@@ -161,7 +131,10 @@ function SummaryPill({ icon: Icon, label, value, colors }) {
     >
       <Icon size={16} style={{ color: colors.accent }} />
       <div>
-        <div className="text-[11px] uppercase tracking-wide" style={{ color: colors.text2 }}>
+        <div
+          className="text-[11px] uppercase tracking-wide"
+          style={{ color: colors.text2 }}
+        >
           {label}
         </div>
         <div className="text-sm font-medium" style={{ color: colors.text }}>
@@ -172,11 +145,23 @@ function SummaryPill({ icon: Icon, label, value, colors }) {
   );
 }
 
+function resolveSelectedId(items, currentId, preferredId) {
+  if (preferredId && items.some((item) => item.id === preferredId)) {
+    return preferredId;
+  }
+
+  if (currentId && items.some((item) => item.id === currentId)) {
+    return currentId;
+  }
+
+  return "";
+}
+
 export default function ChassisDoctorManagement() {
   const { colors } = useTheme();
+  const { admin } = useAdminSession();
 
   const [loading, setLoading] = useState(INITIAL_LOADING);
-
   const [symptoms, setSymptoms] = useState([]);
   const [sets, setSets] = useState([]);
   const [issues, setIssues] = useState([]);
@@ -191,6 +176,7 @@ export default function ChassisDoctorManagement() {
   const [selectedPresetIds, setSelectedPresetIds] = useState([]);
   const [priorityOrder, setPriorityOrder] = useState("100");
 
+  const [symptomModalOpen, setSymptomModalOpen] = useState(false);
   const [setModalOpen, setSetModalOpen] = useState(false);
   const [recommendationModalOpen, setRecommendationModalOpen] = useState(false);
 
@@ -216,20 +202,12 @@ export default function ChassisDoctorManagement() {
   );
 
   const symptomOptions = useMemo(
-    () =>
-      symptoms.map((item) => ({
-        id: item.id,
-        label: item.name,
-      })),
+    () => symptoms.map((item) => ({ id: item.id, label: item.name })),
     [symptoms]
   );
 
   const setOptions = useMemo(
-    () =>
-      sets.map((item) => ({
-        id: item.id,
-        label: item.title,
-      })),
+    () => sets.map((item) => ({ id: item.id, label: item.title })),
     [sets]
   );
 
@@ -237,7 +215,7 @@ export default function ChassisDoctorManagement() {
     () =>
       recommendations.map((item) => ({
         id: item.id,
-        label: `${item.title} • ${item.category}`,
+        label: `${item.title} - ${item.category}`,
       })),
     [recommendations]
   );
@@ -246,9 +224,12 @@ export default function ChassisDoctorManagement() {
     let mounted = true;
 
     const bootstrap = async () => {
-      setLoadingFlag("symptoms", true);
-      setLoadingFlag("recommendations", true);
-      setLoadingFlag("presets", true);
+      setLoading((prev) => ({
+        ...prev,
+        symptoms: true,
+        recommendations: true,
+        presets: true,
+      }));
 
       try {
         const [symptomRows, recommendationRows, presetRows] = await Promise.all([
@@ -258,18 +239,22 @@ export default function ChassisDoctorManagement() {
         ]);
 
         if (!mounted) return;
-
         setSymptoms(symptomRows);
         setRecommendations(recommendationRows);
         setPresets(presetRows);
       } catch (error) {
-        if (!mounted) return;
-        toast.error(error.message || "Failed to load chassis doctor data");
+        if (mounted) {
+          toast.error(error.message || "Failed to load chassis doctor data");
+        }
       } finally {
-        if (!mounted) return;
-        setLoadingFlag("symptoms", false);
-        setLoadingFlag("recommendations", false);
-        setLoadingFlag("presets", false);
+        if (mounted) {
+          setLoading((prev) => ({
+            ...prev,
+            symptoms: false,
+            recommendations: false,
+            presets: false,
+          }));
+        }
       }
     };
 
@@ -294,8 +279,7 @@ export default function ChassisDoctorManagement() {
         return;
       }
 
-      setLoadingFlag("sets", true);
-      setLoadingFlag("issues", true);
+      setLoading((prev) => ({ ...prev, sets: true, issues: true }));
 
       try {
         const [setRows, issueRows] = await Promise.all([
@@ -304,7 +288,6 @@ export default function ChassisDoctorManagement() {
         ]);
 
         if (!mounted) return;
-
         setSets(setRows);
         setIssues(issueRows);
         setSelectedSetId((prev) =>
@@ -314,12 +297,13 @@ export default function ChassisDoctorManagement() {
         setSelectedPresetIds([]);
         setAttachedRecommendations([]);
       } catch (error) {
-        if (!mounted) return;
-        toast.error(error.message || "Failed to load symptom data");
+        if (mounted) {
+          toast.error(error.message || "Failed to load symptom data");
+        }
       } finally {
-        if (!mounted) return;
-        setLoadingFlag("sets", false);
-        setLoadingFlag("issues", false);
+        if (mounted) {
+          setLoading((prev) => ({ ...prev, sets: false, issues: false }));
+        }
       }
     };
 
@@ -351,16 +335,17 @@ export default function ChassisDoctorManagement() {
         ]);
 
         if (!mounted) return;
-
         setSelectedIssueIds(issueIds);
         setAttachedRecommendations(attachedRows);
         setSelectedPresetIds(presetIds);
       } catch (error) {
-        if (!mounted) return;
-        toast.error(error.message || "Failed to load set details");
+        if (mounted) {
+          toast.error(error.message || "Failed to load set details");
+        }
       } finally {
-        if (!mounted) return;
-        setLoadingFlag("setContext", false);
+        if (mounted) {
+          setLoadingFlag("setContext", false);
+        }
       }
     };
 
@@ -371,11 +356,41 @@ export default function ChassisDoctorManagement() {
     };
   }, [selectedSetId]);
 
-  const toggleSelection = (list, value) => {
-    if (list.includes(value)) {
-      return list.filter((item) => item !== value);
+  const toggleSelection = (list, value) =>
+    list.includes(value)
+      ? list.filter((item) => item !== value)
+      : [...list, value];
+
+  const refreshAttachedRecommendations = async (setId) => {
+    const rows = await getRecommendationsForSet(setId);
+    setAttachedRecommendations(rows);
+  };
+
+  const handleCreateSymptom = async ({ title, description, isActive }) => {
+    setLoadingFlag("createSymptom", true);
+
+    try {
+      const created = await createSymptom({
+        title,
+        description,
+        isActive,
+        createdBy: admin?.id || undefined,
+      });
+
+      const symptomRows = await listActiveSymptoms();
+      setSymptoms(symptomRows);
+      setSelectedSymptomId((prev) =>
+        resolveSelectedId(symptomRows, prev, created.id)
+      );
+
+      toast.success("Symptom created successfully");
+      return true;
+    } catch (error) {
+      toast.error(error.message || "Failed to create symptom");
+      return false;
+    } finally {
+      setLoadingFlag("createSymptom", false);
     }
-    return [...list, value];
   };
 
   const handleCreateSet = async ({ title, isActive }) => {
@@ -453,11 +468,6 @@ export default function ChassisDoctorManagement() {
     }
   };
 
-  const refreshAttachedRecommendations = async (setId) => {
-    const rows = await getRecommendationsForSet(setId);
-    setAttachedRecommendations(rows);
-  };
-
   const handleAttachRecommendation = async () => {
     if (!selectedSetId) {
       toast.error("Please select an adjustment set first");
@@ -530,6 +540,15 @@ export default function ChassisDoctorManagement() {
     }
   };
 
+  const sectionPanelStyle = {
+    backgroundColor: colors.card || colors.bg,
+    border: `1px solid ${colors.ring}`,
+  };
+
+  const attachedRecommendationEmptyDescription = recommendations.length
+    ? "No recommendations are attached yet. Select one above, set a priority order, and attach it to this adjustment set."
+    : "No recommendations are attached yet. Create a recommendation in Section 4, then return here to attach it with a priority order.";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -539,7 +558,7 @@ export default function ChassisDoctorManagement() {
           </h1>
           <p className="mt-1 text-sm" style={{ color: colors.text2 }}>
             Manage symptom-based adjustment sets, issue links, recommendations,
-            and track preset bindings in one production-ready workflow.
+            and optional track preset bindings in one workflow.
           </p>
         </div>
 
@@ -561,25 +580,54 @@ export default function ChassisDoctorManagement() {
 
       <DoctorSectionCard
         title="Section 1: Select Symptom"
-        subtitle="Start by choosing the active chassis symptom you want to configure."
+        subtitle="Choose the active chassis symptom you want to configure, or create a new one for this workflow."
+        right={
+          <DoctorButton icon={MdAdd} onClick={() => setSymptomModalOpen(true)}>
+            Create Symptom
+          </DoctorButton>
+        }
       >
         {loading.symptoms ? (
           <InlineLoader label="Loading symptoms..." colors={colors} />
         ) : symptoms.length === 0 ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdWarningAmber}
-            title="No active symptoms found"
-            description="Create or activate symptoms first, then come back here."
-            colors={colors}
+            title="No active symptoms yet"
+            description="Create the first chassis symptom to unlock adjustment sets, issue links, and recommendation workflows."
+            actionLabel="Create First Symptom"
+            actionIcon={MdAdd}
+            onAction={() => setSymptomModalOpen(true)}
           />
         ) : (
-          <SelectField
-            value={selectedSymptomId}
-            onChange={(e) => setSelectedSymptomId(e.target.value)}
-            options={symptomOptions}
-            placeholder="Select a symptom..."
-            colors={colors}
-          />
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_300px]">
+            <SelectField
+              value={selectedSymptomId}
+              onChange={(event) => setSelectedSymptomId(event.target.value)}
+              options={symptomOptions}
+              placeholder="Select a symptom..."
+              colors={colors}
+            />
+
+            <div className="rounded-2xl p-4" style={sectionPanelStyle}>
+              <div className="mb-1 text-xs uppercase" style={{ color: colors.text2 }}>
+                Current Symptom
+              </div>
+              {selectedSymptom ? (
+                <>
+                  <div className="font-semibold" style={{ color: colors.text }}>
+                    {selectedSymptom.name}
+                  </div>
+                  <div className="mt-1 text-sm" style={{ color: colors.text2 }}>
+                    {selectedSymptom.description || "No description provided."}
+                  </div>
+                </>
+              ) : (
+                <div className="text-sm" style={{ color: colors.text2 }}>
+                  Select a symptom to load its adjustment workflow.
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </DoctorSectionCard>
 
@@ -597,31 +645,33 @@ export default function ChassisDoctorManagement() {
         }
       >
         {!selectedSymptomId ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdLayers}
             title="No symptom selected"
-            description="Select a symptom first to load its adjustment sets."
-            colors={colors}
+            description="Select a symptom first to load or create its adjustment sets."
           />
         ) : loading.sets ? (
           <InlineLoader label="Loading adjustment sets..." colors={colors} />
+        ) : sets.length === 0 ? (
+          <DoctorEmptyState
+            icon={MdLayers}
+            title="No adjustment sets for this symptom"
+            description="Create the first adjustment set for the selected symptom to continue building the workflow."
+            actionLabel="Create First Set"
+            actionIcon={MdAdd}
+            onAction={() => setSetModalOpen(true)}
+          />
         ) : (
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
             <SelectField
               value={selectedSetId}
-              onChange={(e) => setSelectedSetId(e.target.value)}
+              onChange={(event) => setSelectedSetId(event.target.value)}
               options={setOptions}
               placeholder="Select or create a set..."
               colors={colors}
             />
 
-            <div
-              className="rounded-2xl p-4"
-              style={{
-                backgroundColor: colors.card || colors.bg,
-                border: `1px solid ${colors.ring}`,
-              }}
-            >
+            <div className="rounded-2xl p-4" style={sectionPanelStyle}>
               <div className="text-xs uppercase" style={{ color: colors.text2 }}>
                 Set Stats
               </div>
@@ -653,20 +703,18 @@ export default function ChassisDoctorManagement() {
         }
       >
         {!selectedSetId ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdLink}
             title="No adjustment set selected"
             description="Choose a set first to manage issue option links."
-            colors={colors}
           />
         ) : loading.issues || loading.setContext ? (
           <InlineLoader label="Loading issue options..." colors={colors} />
         ) : issues.length === 0 ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdTune}
             title="No issue options found"
             description="This symptom does not have any active issue options yet."
-            colors={colors}
           />
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -700,29 +748,27 @@ export default function ChassisDoctorManagement() {
         {loading.recommendations ? (
           <InlineLoader label="Loading recommendations..." colors={colors} />
         ) : recommendations.length === 0 ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdPlaylistAddCheck}
-            title="No recommendations found"
-            description="Create your first recommendation to continue."
-            colors={colors}
+            title="No recommendations in the catalog"
+            description="Create the first reusable recommendation to attach it to adjustment sets."
+            actionLabel="Create First Recommendation"
+            actionIcon={MdAdd}
+            onAction={() => setRecommendationModalOpen(true)}
           />
         ) : (
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_300px]">
             <SelectField
               value={selectedRecommendationId}
-              onChange={(e) => setSelectedRecommendationId(e.target.value)}
+              onChange={(event) =>
+                setSelectedRecommendationId(event.target.value)
+              }
               options={recommendationOptions}
               placeholder="Select recommendation..."
               colors={colors}
             />
 
-            <div
-              className="rounded-2xl p-4"
-              style={{
-                backgroundColor: colors.card || colors.bg,
-                border: `1px solid ${colors.ring}`,
-              }}
-            >
+            <div className="rounded-2xl p-4" style={sectionPanelStyle}>
               <div className="mb-1 text-xs uppercase" style={{ color: colors.text2 }}>
                 Selected Recommendation
               </div>
@@ -770,29 +816,24 @@ export default function ChassisDoctorManagement() {
         }
       >
         {!selectedSetId ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdCheckCircle}
             title="No adjustment set selected"
             description="Select a set first, then attach recommendations to it."
-            colors={colors}
           />
         ) : (
           <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px]">
-              <div
-                className="rounded-2xl p-4"
-                style={{
-                  backgroundColor: colors.card || colors.bg,
-                  border: `1px solid ${colors.ring}`,
-                }}
-              >
+              <div className="rounded-2xl p-4" style={sectionPanelStyle}>
                 <div className="text-xs uppercase" style={{ color: colors.text2 }}>
                   Ready To Attach
                 </div>
                 <div className="mt-2 text-sm" style={{ color: colors.text }}>
                   {selectedRecommendation
                     ? selectedRecommendation.title
-                    : "No recommendation selected"}
+                    : recommendations.length
+                      ? "Select a recommendation in Section 4"
+                      : "Create a recommendation in Section 4"}
                 </div>
               </div>
 
@@ -807,7 +848,7 @@ export default function ChassisDoctorManagement() {
                   type="number"
                   min="1"
                   value={priorityOrder}
-                  onChange={(e) => setPriorityOrder(e.target.value)}
+                  onChange={(event) => setPriorityOrder(event.target.value)}
                   className="w-full rounded-xl px-3 py-3 text-sm outline-none"
                   style={{
                     backgroundColor: colors.card || colors.bg,
@@ -824,11 +865,21 @@ export default function ChassisDoctorManagement() {
                 colors={colors}
               />
             ) : attachedRecommendations.length === 0 ? (
-              <EmptyState
+              <DoctorEmptyState
                 icon={MdPlaylistAddCheck}
                 title="No recommendations attached yet"
-                description="Attach one or more recommendations to build the set logic."
-                colors={colors}
+                description={attachedRecommendationEmptyDescription}
+                actionLabel={
+                  recommendations.length === 0
+                    ? "Create First Recommendation"
+                    : undefined
+                }
+                actionIcon={MdAdd}
+                onAction={
+                  recommendations.length === 0
+                    ? () => setRecommendationModalOpen(true)
+                    : undefined
+                }
               />
             ) : (
               <div className="grid gap-3">
@@ -836,10 +887,7 @@ export default function ChassisDoctorManagement() {
                   <div
                     key={item.recommendationId}
                     className="rounded-2xl p-4"
-                    style={{
-                      backgroundColor: colors.card || colors.bg,
-                      border: `1px solid ${colors.ring}`,
-                    }}
+                    style={sectionPanelStyle}
                   >
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
@@ -912,27 +960,29 @@ export default function ChassisDoctorManagement() {
         }
       >
         {!selectedSetId ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdSpeed}
             title="No adjustment set selected"
             description="Choose a set first to link track presets."
-            colors={colors}
           />
         ) : loading.presets || loading.setContext ? (
           <InlineLoader label="Loading track presets..." colors={colors} />
         ) : presets.length === 0 ? (
-          <EmptyState
+          <DoctorEmptyState
             icon={MdFlag}
             title="No track presets available"
-            description="Track preset configuration is optional. Add presets in the database to use this section."
-            colors={colors}
+            description="Track presets are optional for this workflow. Add them later if this adjustment set needs preset links."
           />
         ) : (
           <div className="flex flex-wrap gap-2">
             {presets.map((preset) => (
               <ChoiceChip
                 key={preset.id}
-                label={preset.category ? `${preset.name} • ${preset.category}` : preset.name}
+                label={
+                  preset.category
+                    ? `${preset.name} - ${preset.category}`
+                    : preset.name
+                }
                 selected={selectedPresetIds.includes(preset.id)}
                 onClick={() =>
                   setSelectedPresetIds((prev) =>
@@ -945,6 +995,13 @@ export default function ChassisDoctorManagement() {
           </div>
         )}
       </DoctorSectionCard>
+
+      <CreateSymptomModal
+        isOpen={symptomModalOpen}
+        onClose={() => setSymptomModalOpen(false)}
+        onSubmit={handleCreateSymptom}
+        loading={loading.createSymptom}
+      />
 
       <CreateAdjustmentSetModal
         isOpen={setModalOpen}

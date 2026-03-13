@@ -8,6 +8,10 @@ const INITIAL_STATE = {
   isActive: true,
 };
 
+const INITIAL_ERRORS = {
+  title: "",
+};
+
 export default function CreateAdjustmentSetModal({
   isOpen,
   onClose,
@@ -16,17 +20,37 @@ export default function CreateAdjustmentSetModal({
 }) {
   const { colors } = useTheme();
   const [form, setForm] = useState(INITIAL_STATE);
+  const [errors, setErrors] = useState(INITIAL_ERRORS);
 
   useEffect(() => {
-    if (isOpen) {
-      setForm(INITIAL_STATE);
-    }
+    if (!isOpen) return;
+
+    setForm(INITIAL_STATE);
+    setErrors(INITIAL_ERRORS);
   }, [isOpen]);
+
+  const handleClose = () => {
+    if (loading) return;
+    onClose?.();
+  };
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: "" }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!form.title.trim()) {
+      setErrors({
+        title: "Set title is required.",
+      });
+      return;
+    }
+
     const shouldClose = await onSubmit?.({
-      title: form.title,
+      title: form.title.trim(),
       isActive: form.isActive,
     });
 
@@ -38,7 +62,7 @@ export default function CreateAdjustmentSetModal({
   return (
     <DoctorModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Create Adjustment Set"
       subtitle="Create a reusable adjustment set for the selected symptom."
       footer={
@@ -46,7 +70,8 @@ export default function CreateAdjustmentSetModal({
           <DoctorButton
             variant="secondary"
             className="flex-1"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={loading}
           >
             Cancel
           </DoctorButton>
@@ -56,7 +81,7 @@ export default function CreateAdjustmentSetModal({
             className="flex-1"
             loading={loading}
           >
-            Create Set
+            Save Set
           </DoctorButton>
         </div>
       }
@@ -77,17 +102,22 @@ export default function CreateAdjustmentSetModal({
             type="text"
             value={form.title}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, title: e.target.value }))
+              updateField("title", e.target.value)
             }
             className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
             style={{
               backgroundColor: colors.bg2,
-              border: `1px solid ${colors.ring}`,
+              border: `1px solid ${errors.title ? colors.danger : colors.ring}`,
               color: colors.text,
             }}
             placeholder="e.g. Corner Exit Recovery"
-            required
+            aria-invalid={Boolean(errors.title)}
           />
+          {errors.title ? (
+            <p className="mt-1.5 text-xs" style={{ color: colors.danger }}>
+              {errors.title}
+            </p>
+          ) : null}
         </div>
 
         <label
@@ -101,7 +131,7 @@ export default function CreateAdjustmentSetModal({
             type="checkbox"
             checked={form.isActive}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, isActive: e.target.checked }))
+              updateField("isActive", e.target.checked)
             }
           />
           <span className="text-sm" style={{ color: colors.text }}>

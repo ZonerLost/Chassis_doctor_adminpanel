@@ -11,6 +11,14 @@ const TABLES = {
   setPresets: "chassis_adjustment_set_track_presets",
 };
 
+function toUiId(value) {
+  return value == null ? "" : String(value);
+}
+
+function mapRows(data, mapper) {
+  return (data || []).map(mapper);
+}
+
 function throwIfError(error, fallbackMessage) {
   if (error) {
     throw new Error(error.message || fallbackMessage);
@@ -19,9 +27,8 @@ function throwIfError(error, fallbackMessage) {
 
 function mapSymptom(row) {
   return {
-    id: row.id,
+    id: toUiId(row.id),
     name: row.name || row.title || "",
-    category: row.category || "",
     description: row.description || row.details || "",
     isActive: row.is_active ?? row.isActive ?? true,
     raw: row,
@@ -30,7 +37,7 @@ function mapSymptom(row) {
 
 function mapSet(row) {
   return {
-    id: row.id,
+    id: toUiId(row.id),
     title: row.title || row.name || "",
     isActive: row.is_active ?? row.isActive ?? true,
     createdAt: row.created_at || row.createdAt || null,
@@ -40,7 +47,7 @@ function mapSet(row) {
 
 function mapIssue(row) {
   return {
-    id: row.id,
+    id: toUiId(row.id),
     name: row.name || row.title || "",
     description: row.description || row.details || "",
     isActive: row.is_active ?? row.isActive ?? true,
@@ -50,7 +57,7 @@ function mapIssue(row) {
 
 function mapRecommendation(row) {
   return {
-    id: row.id,
+    id: toUiId(row.id),
     title: row.title || row.name || "",
     details: row.details || row.description || "",
     category: row.category || "Other",
@@ -61,7 +68,7 @@ function mapRecommendation(row) {
 
 function mapPreset(row) {
   return {
-    id: row.id,
+    id: toUiId(row.id),
     name: row.name || row.title || row.track_name || "Untitled preset",
     category: row.category || "",
     raw: row,
@@ -76,7 +83,33 @@ export async function listActiveSymptoms() {
     .order("created_at", { ascending: false });
 
   throwIfError(error, "Failed to load symptoms");
-  return (data || []).map(mapSymptom);
+  return mapRows(data, mapSymptom);
+}
+
+export async function createSymptom({
+  title,
+  description,
+  isActive,
+  createdBy,
+}) {
+  const payload = {
+    title: title.trim(),
+    description: description.trim(),
+    is_active: Boolean(isActive),
+  };
+
+  if (createdBy) {
+    payload.created_by = createdBy;
+  }
+
+  const { data, error } = await supabase
+    .from(TABLES.symptoms)
+    .insert(payload)
+    .select("*")
+    .single();
+
+  throwIfError(error, "Failed to create symptom");
+  return mapSymptom(data);
 }
 
 export async function listSetsBySymptom(symptomId) {
@@ -89,7 +122,7 @@ export async function listSetsBySymptom(symptomId) {
     .order("created_at", { ascending: false });
 
   throwIfError(error, "Failed to load adjustment sets");
-  return (data || []).map(mapSet);
+  return mapRows(data, mapSet);
 }
 
 export async function createAdjustmentSet({ symptomId, title, isActive }) {
@@ -120,7 +153,7 @@ export async function listIssueOptionsBySymptom(symptomId) {
     .order("created_at", { ascending: false });
 
   throwIfError(error, "Failed to load issue options");
-  return (data || []).map(mapIssue);
+  return mapRows(data, mapIssue);
 }
 
 export async function getLinkedIssueIds(setId) {
@@ -132,7 +165,7 @@ export async function getLinkedIssueIds(setId) {
     .eq("set_id", setId);
 
   throwIfError(error, "Failed to load linked issue options");
-  return (data || []).map((item) => item.issue_option_id);
+  return mapRows(data, (item) => toUiId(item.issue_option_id));
 }
 
 export async function replaceIssueLinks({ setId, issueIds }) {
@@ -166,7 +199,7 @@ export async function listRecommendations() {
     .order("created_at", { ascending: false });
 
   throwIfError(error, "Failed to load recommendations");
-  return (data || []).map(mapRecommendation);
+  return mapRows(data, mapRecommendation);
 }
 
 export async function createRecommendation({ title, details, category }) {
@@ -197,10 +230,10 @@ export async function getRecommendationsForSet(setId) {
 
   throwIfError(error, "Failed to load attached recommendations");
 
-  return (data || []).map((item) => {
+  return mapRows(data, (item) => {
     const recommendation = item.adjustment_recommendations || {};
     return {
-      recommendationId: item.recommendation_id,
+      recommendationId: toUiId(item.recommendation_id),
       priorityOrder: item.priority_order ?? 0,
       ...mapRecommendation(recommendation),
     };
@@ -251,7 +284,7 @@ export async function listTrackPresets() {
       .order("created_at", { ascending: false });
 
     if (error) return [];
-    return (data || []).map(mapPreset);
+    return mapRows(data, mapPreset);
   } catch {
     return [];
   }
@@ -267,7 +300,7 @@ export async function getLinkedPresetIds(setId) {
       .eq("set_id", setId);
 
     if (error) return [];
-    return (data || []).map((item) => item.preset_id);
+    return mapRows(data, (item) => toUiId(item.preset_id));
   } catch {
     return [];
   }
