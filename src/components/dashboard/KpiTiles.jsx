@@ -1,17 +1,26 @@
 import React from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 
-function formatValue(value, suffix) {
-  if (value == null) return "—";
-  if (suffix === "%") return `${value}%`;
-  if (typeof value === "number") return value.toLocaleString();
-  return value;
+const FALLBACK_LABEL = "\u2014";
+
+function formatValue(value, decimals = 0) {
+  if (value == null) return FALLBACK_LABEL;
+
+  if (typeof value === "number") {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }
+
+  return value || FALLBACK_LABEL;
 }
 
-function renderChange(change) {
-  if (change == null) return "—";
-  const abs = Math.abs(change);
-  return `${change >= 0 ? "▲" : "▼"} ${abs}%`;
+function formatChange(change) {
+  if (change == null) return FALLBACK_LABEL;
+
+  const direction = change >= 0 ? "Up" : "Down";
+  return `${direction} ${Math.abs(change).toFixed(1)}%`;
 }
 
 export default function KpiTiles({ items = [], loading = false }) {
@@ -19,26 +28,26 @@ export default function KpiTiles({ items = [], loading = false }) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={index}
-            className="rounded-2xl border p-4 animate-pulse"
+            className="animate-pulse rounded-2xl border p-4"
             style={{
               backgroundColor: colors.bg2,
               borderColor: colors.ring,
             }}
           >
             <div
-              className="h-4 w-24 rounded mb-4"
+              className="mb-4 h-4 w-24 rounded"
               style={{ backgroundColor: colors.hover }}
             />
             <div
-              className="h-8 w-32 rounded mb-3"
+              className="mb-3 h-8 w-32 rounded"
               style={{ backgroundColor: colors.hover }}
             />
             <div
-              className="h-3 w-20 rounded"
+              className="h-3 w-28 rounded"
               style={{ backgroundColor: colors.hover }}
             />
           </div>
@@ -48,15 +57,16 @@ export default function KpiTiles({ items = [], loading = false }) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => {
         const Icon = item.icon;
-        const changeColor =
+        const hasChange = item.change != null;
+        const toneColor =
           item.change == null
             ? colors.text2
             : item.change >= 0
-            ? colors.accent
-            : "#ef4444";
+              ? colors.ok || colors.accent
+              : colors.danger;
 
         return (
           <div
@@ -72,23 +82,26 @@ export default function KpiTiles({ items = [], loading = false }) {
                 <div className="text-sm" style={{ color: colors.text2 }}>
                   {item.label}
                 </div>
+
                 <div
                   className="mt-2 text-2xl font-semibold"
                   style={{ color: colors.text }}
                 >
-                  {formatValue(item.value, item.suffix)}
+                  {formatValue(item.value, item.decimals || 0)}
+                  {item.suffix || ""}
                 </div>
+
                 <div
                   className="mt-2 text-xs"
-                  style={{ color: changeColor }}
+                  style={{ color: hasChange ? toneColor : colors.text2 }}
                 >
-                  {renderChange(item.change)}
+                  {hasChange ? formatChange(item.change) : item.helperText || FALLBACK_LABEL}
                 </div>
               </div>
 
               {Icon ? (
                 <div
-                  className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                   style={{
                     backgroundColor: colors.hover,
                     border: `1px solid ${colors.ring}`,

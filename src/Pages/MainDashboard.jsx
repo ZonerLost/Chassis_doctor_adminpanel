@@ -1,85 +1,65 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ResponsiveContainer,
-  ComposedChart,
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  ComposedChart,
+  Legend,
   Line,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
 } from "recharts";
 import {
+  MdBuild,
+  MdLogin,
+  MdMenuBook,
+  MdOutlineFilterAlt,
   MdPeople,
   MdPersonAdd,
-  MdLogin,
-  MdVerifiedUser,
+  MdRefresh,
   MdSchool,
   MdStar,
-  MdRefresh,
-  MdUploadFile,
-  MdMenuBook,
-  MdBuild,
-  MdOutlineFilterAlt,
+  MdVerifiedUser,
 } from "react-icons/md";
-
-import { useTheme } from "../contexts/ThemeContext";
 import ActionBtn from "../components/dashboard/ActionBtn";
-import KpiTiles from "../components/dashboard/KpiTiles";
 import ActivityFeed from "../components/dashboard/ActivityFeed";
+import KpiTiles from "../components/dashboard/KpiTiles";
 import SystemHealth from "../components/dashboard/SystemHealth";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   DASHBOARD_RANGE_OPTIONS,
   EMPTY_DASHBOARD_OVERVIEW,
   getDashboardOverview,
 } from "../services/dashboard.service";
 
-function formatRelativeTime(value) {
-  if (!value) return "—";
-  const timestamp = new Date(value).getTime();
-  if (Number.isNaN(timestamp)) return "—";
-
-  const diffSeconds = Math.floor((Date.now() - timestamp) / 1000);
-
-  if (diffSeconds < 60) return "just now";
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
-  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
-  if (diffSeconds < 604800) return `${Math.floor(diffSeconds / 86400)}d ago`;
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
-
 function DashboardFilters({ range, onRangeChange, onRefresh, loading, colors }) {
   return (
     <div
-      className="rounded-2xl border p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+      className="flex flex-col gap-4 rounded-2xl border p-4 lg:flex-row lg:items-center lg:justify-between"
       style={{
         backgroundColor: colors.bg2,
         borderColor: colors.ring,
       }}
     >
       <div className="min-w-0">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="mb-2 flex items-center gap-2">
           <MdOutlineFilterAlt style={{ color: colors.text2 }} />
           <div className="text-sm font-medium" style={{ color: colors.text }}>
             Dashboard Filters
           </div>
         </div>
         <div className="text-xs" style={{ color: colors.text2 }}>
-          Switch the period to refresh KPIs, activity and charts from Supabase.
+          Switch the reporting window to refresh KPIs, charts, and recent activity.
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="min-w-[210px]">
           <label
             htmlFor="dashboard-range"
-            className="block text-xs mb-1"
+            className="mb-1 block text-xs"
             style={{ color: colors.text2 }}
           >
             Period
@@ -108,7 +88,7 @@ function DashboardFilters({ range, onRangeChange, onRefresh, loading, colors }) 
             type="button"
             onClick={onRefresh}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium min-w-[120px]"
+            className="inline-flex min-h-[44px] min-w-[120px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium"
             style={{
               backgroundColor: colors.hover,
               borderColor: colors.ring,
@@ -125,7 +105,7 @@ function DashboardFilters({ range, onRangeChange, onRefresh, loading, colors }) 
   );
 }
 
-function ChartCard({ title, subtitle, rightLabel, children, colors }) {
+function PanelCard({ title, subtitle, rightLabel, colors, children }) {
   return (
     <div
       className="rounded-2xl border p-4"
@@ -134,7 +114,7 @@ function ChartCard({ title, subtitle, rightLabel, children, colors }) {
         borderColor: colors.ring,
       }}
     >
-      <div className="flex items-start justify-between gap-3 mb-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm" style={{ color: colors.text2 }}>
             {subtitle}
@@ -144,7 +124,7 @@ function ChartCard({ title, subtitle, rightLabel, children, colors }) {
           </div>
         </div>
         {rightLabel ? (
-          <div className="text-xs whitespace-nowrap" style={{ color: colors.text2 }}>
+          <div className="whitespace-nowrap text-xs" style={{ color: colors.text2 }}>
             {rightLabel}
           </div>
         ) : null}
@@ -154,10 +134,10 @@ function ChartCard({ title, subtitle, rightLabel, children, colors }) {
   );
 }
 
-function EmptyState({ message, colors }) {
+function InlineNotice({ message, colors }) {
   return (
     <div
-      className="rounded-2xl border p-6 text-sm"
+      className="rounded-2xl border px-4 py-3 text-sm"
       style={{
         backgroundColor: colors.bg2,
         borderColor: colors.ring,
@@ -169,147 +149,224 @@ function EmptyState({ message, colors }) {
   );
 }
 
-function RecentUsersCard({ users = [], colors }) {
+function ChartFooterNote({ visible, message, colors }) {
+  if (!visible) return null;
+
+  return (
+    <div className="mt-3 text-xs" style={{ color: colors.text2 }}>
+      {message}
+    </div>
+  );
+}
+
+function RecentUsersCard({ users = [], rangeLabel = "", loading = false, colors }) {
   return (
     <div
       className="rounded-2xl border p-4"
       style={{ backgroundColor: colors.bg2, borderColor: colors.ring }}
     >
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div className="text-sm font-semibold" style={{ color: colors.text }}>
           Recent Active Users
         </div>
         <div className="text-xs" style={{ color: colors.text2 }}>
-          Latest logins
+          {rangeLabel || "Latest logins"}
         </div>
       </div>
 
-      {users.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-3 rounded-xl border p-3"
+              style={{
+                backgroundColor: colors.card || colors.hover,
+                borderColor: colors.ring,
+              }}
+            >
+              <div
+                className="h-11 w-11 rounded-full"
+                style={{ backgroundColor: colors.hover }}
+              />
+              <div className="flex-1 space-y-2">
+                <div
+                  className="h-4 w-32 rounded"
+                  style={{ backgroundColor: colors.hover }}
+                />
+                <div
+                  className="h-3 w-40 rounded"
+                  style={{ backgroundColor: colors.hover }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : users.length === 0 ? (
         <div className="text-sm" style={{ color: colors.text2 }}>
-          No recent users found.
+          No user logins were found for this range.
         </div>
       ) : (
         <div className="space-y-3">
-          {users.map((user) => {
-            const displayName = user.full_name || user.email || "User";
-
-            return (
-              <div
-                key={user.id}
-                className="flex items-center gap-3 rounded-xl p-3"
-                style={{
-                  backgroundColor: colors.card || colors.hover,
-                  border: `1px solid ${colors.ring}`,
-                }}
-              >
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={displayName}
-                    className="h-11 w-11 rounded-full object-cover shrink-0"
-                  />
-                ) : (
-                  <div
-                    className="h-11 w-11 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
-                    style={{
-                      backgroundColor: colors.hover,
-                      border: `1px solid ${colors.ring}`,
-                      color: colors.text,
-                    }}
-                  >
-                    {displayName.slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-
-                <div className="min-w-0 flex-1">
-                  <div
-                    className="text-sm font-medium truncate"
-                    style={{ color: colors.text }}
-                  >
-                    {displayName}
-                  </div>
-                  <div className="text-xs truncate" style={{ color: colors.text2 }}>
-                    {user.email || "No email"}
-                  </div>
+          {users.map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center gap-3 rounded-xl border p-3"
+              style={{
+                backgroundColor: colors.card || colors.hover,
+                borderColor: colors.ring,
+              }}
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.displayName}
+                  className="h-11 w-11 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                  style={{
+                    backgroundColor: colors.hover,
+                    border: `1px solid ${colors.ring}`,
+                    color: colors.text,
+                  }}
+                >
+                  {user.avatarInitial}
                 </div>
+              )}
 
-                <div className="text-[11px] whitespace-nowrap" style={{ color: colors.text2 }}>
-                  {formatRelativeTime(user.last_login_at || user.created_at)}
+              <div className="min-w-0 flex-1">
+                <div
+                  className="truncate text-sm font-medium"
+                  style={{ color: colors.text }}
+                >
+                  {user.displayName}
+                </div>
+                <div className="truncate text-xs" style={{ color: colors.text2 }}>
+                  {user.email || "No email"}
                 </div>
               </div>
-            );
-          })}
+
+              <div className="whitespace-nowrap text-[11px]" style={{ color: colors.text2 }}>
+                {user.lastSeenLabel}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function CourseGalleryCard({ courses = [], colors }) {
+function CourseGalleryCard({
+  courses = [],
+  rangeLabel = "",
+  loading = false,
+  colors,
+}) {
+  const cardStyle = {
+    backgroundColor: colors.card || colors.hover,
+    borderColor: colors.ring,
+  };
+
+  const mediaFrameStyle = {
+    backgroundColor: colors.hover,
+    borderColor: colors.ring,
+  };
+
   return (
     <div
       className="rounded-2xl border p-4"
       style={{ backgroundColor: colors.bg2, borderColor: colors.ring }}
     >
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div className="text-sm font-semibold" style={{ color: colors.text }}>
           Recent Published Courses
         </div>
         <div className="text-xs" style={{ color: colors.text2 }}>
-          Using DB thumbnails
+          {rangeLabel || "Published courses"}
         </div>
       </div>
 
-      {courses.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="rounded-2xl border p-3"
+              style={cardStyle}
+            >
+              <div
+                className="h-32 rounded-xl border sm:h-28 xl:h-24"
+                style={mediaFrameStyle}
+              />
+              <div className="mt-3 space-y-2.5 px-0.5">
+                <div
+                  className="h-4 w-3/4 rounded"
+                  style={{ backgroundColor: colors.hover }}
+                />
+                <div
+                  className="h-3 w-full rounded"
+                  style={{ backgroundColor: colors.hover }}
+                />
+                <div
+                  className="h-3 w-24 rounded"
+                  style={{ backgroundColor: colors.hover }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : courses.length === 0 ? (
         <div className="text-sm" style={{ color: colors.text2 }}>
-          No published courses found.
+          No published courses were found for this range.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {courses.map((course) => (
             <div
               key={course.id}
-              className="rounded-2xl overflow-hidden border"
-              style={{
-                backgroundColor: colors.card || colors.hover,
-                borderColor: colors.ring,
-              }}
+              className="rounded-2xl border p-3"
+              style={cardStyle}
             >
-              <div className="aspect-[16/10] overflow-hidden">
-                {course.thumbnail_url ? (
+              <div
+                className="overflow-hidden rounded-xl border"
+                style={mediaFrameStyle}
+              >
+                {course.thumbnailUrl ? (
                   <img
-                    src={course.thumbnail_url}
+                    src={course.thumbnailUrl}
                     alt={course.title}
-                    className="h-full w-full object-cover"
+                    className="h-32 w-full object-cover sm:h-28 xl:h-24"
                   />
                 ) : (
                   <div
-                    className="h-full w-full flex items-center justify-center text-sm"
-                    style={{
-                      backgroundColor: colors.hover,
-                      color: colors.text2,
-                    }}
+                    className="flex h-32 w-full items-center justify-center text-sm sm:h-28 xl:h-24"
+                    style={{ color: colors.text2 }}
                   >
                     No thumbnail
                   </div>
                 )}
               </div>
 
-              <div className="p-3">
+              <div className="mt-3 space-y-2 px-0.5">
                 <div
-                  className="text-sm font-semibold line-clamp-1"
+                  className="line-clamp-1 text-sm font-semibold leading-5"
                   style={{ color: colors.text }}
                 >
                   {course.title}
                 </div>
 
-                <div className="mt-1 text-xs line-clamp-2" style={{ color: colors.text2 }}>
-                  {course.category || "General"} • {course.level || "—"} •{" "}
-                  {course.duration_minutes || 0} min
+                <div
+                  className="line-clamp-2 text-xs leading-5"
+                  style={{ color: colors.text2 }}
+                >
+                  {course.metaLabel}
                 </div>
 
-                <div className="mt-2 text-[11px]" style={{ color: colors.text2 }}>
-                  Published {course.created_label}
+                <div className="pt-0.5 text-[11px]" style={{ color: colors.text2 }}>
+                  Published {course.createdLabel}
                 </div>
               </div>
             </div>
@@ -326,15 +383,23 @@ function QuickActionsCard({ colors }) {
       className="rounded-2xl border p-4"
       style={{ backgroundColor: colors.bg2, borderColor: colors.ring }}
     >
-      <div className="text-sm font-semibold mb-4" style={{ color: colors.text }}>
+      <div className="mb-4 text-sm font-semibold" style={{ color: colors.text }}>
         Quick Actions
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <ActionBtn to="/courses/new" icon={MdUploadFile} label="Upload Coaching" />
-        <ActionBtn to="/courses" icon={MdMenuBook} label="View Courses" />
-        <ActionBtn to="/users" icon={MdPeople} label="Manage Users" />
-        <ActionBtn to="/chassis-doctor" icon={MdBuild} label="Open Chassis Doctor" />
+        <ActionBtn to="/courses" icon={MdMenuBook} label="Manage Courses" />
+        <ActionBtn
+          to="/users-memberships"
+          icon={MdPeople}
+          label="Manage Users"
+        />
+        <ActionBtn to="/knowledge" icon={MdMenuBook} label="Knowledge Base" />
+        <ActionBtn
+          to="/chassis-doctor"
+          icon={MdBuild}
+          label="Open Chassis Doctor"
+        />
       </div>
     </div>
   );
@@ -343,7 +408,7 @@ function QuickActionsCard({ colors }) {
 export default function MainDashboard() {
   const { colors } = useTheme();
 
-  const [range, setRange] = useState("30d");
+  const [range, setRange] = useState("12m");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD_OVERVIEW);
@@ -372,6 +437,7 @@ export default function MainDashboard() {
         key: "total-users",
         label: "Total Users",
         value: dashboard.summary.totalUsers,
+        helperText: "All user accounts",
         icon: MdPeople,
       },
       {
@@ -379,6 +445,7 @@ export default function MainDashboard() {
         label: "New Signups",
         value: dashboard.summary.newSignups,
         change: dashboard.changes.newSignups,
+        helperText: dashboard.rangeLabel,
         icon: MdPersonAdd,
       },
       {
@@ -386,12 +453,14 @@ export default function MainDashboard() {
         label: "Logins",
         value: dashboard.summary.logins,
         change: dashboard.changes.logins,
+        helperText: dashboard.rangeLabel,
         icon: MdLogin,
       },
       {
         key: "active-users",
         label: "Active Users",
         value: dashboard.summary.activeUsers,
+        helperText: "Users with active status",
         icon: MdVerifiedUser,
       },
       {
@@ -399,17 +468,36 @@ export default function MainDashboard() {
         label: "Enrollments",
         value: dashboard.summary.enrollments,
         change: dashboard.changes.enrollments,
+        helperText: dashboard.rangeLabel,
         icon: MdSchool,
       },
       {
         key: "avg-rating",
         label: "Avg Rating",
         value: dashboard.summary.avgRating,
-        suffix: "",
+        decimals: 1,
+        helperText: dashboard.rangeLabel,
         icon: MdStar,
       },
     ],
     [dashboard]
+  );
+
+  const userGrowthHasData = useMemo(
+    () =>
+      dashboard.charts.userGrowth.some(
+        (point) => point.signups > 0 || point.logins > 0
+      ),
+    [dashboard.charts.userGrowth]
+  );
+
+  const coursePerformanceHasData = useMemo(
+    () =>
+      dashboard.charts.coursePerformance.some(
+        (point) =>
+          point.enrollments > 0 || point.completions > 0 || point.reviews > 0
+      ),
+    [dashboard.charts.coursePerformance]
   );
 
   const chartTooltipStyle = {
@@ -421,24 +509,24 @@ export default function MainDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <h1
-            className="text-2xl md:text-3xl font-bold"
+            className="text-2xl font-bold md:text-3xl"
             style={{ color: colors.text }}
           >
             Dashboard
           </h1>
-          <div className="text-sm mt-1" style={{ color: colors.text2 }}>
-            Real-time overview from users, courses, reviews, enrollments and chassis symptoms.
+          <div className="mt-1 text-sm" style={{ color: colors.text2 }}>
+            Real-time overview from users, courses, reviews, enrollments, and chassis symptoms.
           </div>
         </div>
 
         <div className="text-sm md:text-right" style={{ color: colors.text2 }}>
-          <div>{dashboard.rangeLabel || "Overview"}</div>
+          <div>{dashboard.rangeLabel}</div>
           <div className="mt-1">
             {dashboard.lastUpdatedAt
-              ? `Updated ${formatRelativeTime(dashboard.lastUpdatedAt)}`
+              ? `Updated ${dashboard.lastUpdatedLabel}`
               : "Waiting for data"}
           </div>
         </div>
@@ -452,15 +540,15 @@ export default function MainDashboard() {
         colors={colors}
       />
 
-      {error ? <EmptyState message={error} colors={colors} /> : null}
+      {error ? <InlineNotice message={error} colors={colors} /> : null}
 
       <KpiTiles items={kpiItems} loading={loading} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <ChartCard
+          <PanelCard
             title="User growth vs logins"
-            subtitle="New signups and login activity"
+            subtitle="Signups and login activity"
             rightLabel={dashboard.rangeLabel}
             colors={colors}
           >
@@ -471,14 +559,20 @@ export default function MainDashboard() {
                     stroke="rgba(255,255,255,0.05)"
                     vertical={false}
                   />
-                  <XAxis dataKey="label" tick={{ fill: colors.text2, fontSize: 12 }} />
-                  <YAxis tick={{ fill: colors.text2, fontSize: 12 }} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: colors.text2, fontSize: 12 }}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fill: colors.text2, fontSize: 12 }}
+                  />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Legend wrapperStyle={{ color: colors.text2 }} />
                   <Bar
                     dataKey="signups"
                     name="Signups"
-                    fill={colors.gold || "#EAB308"}
+                    fill={colors.gold || "#D4AF37"}
                     radius={[6, 6, 0, 0]}
                     maxBarSize={28}
                   />
@@ -493,20 +587,30 @@ export default function MainDashboard() {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          </ChartCard>
+            <ChartFooterNote
+              visible={!loading && !userGrowthHasData}
+              message="No signup or login activity was recorded in this period."
+              colors={colors}
+            />
+          </PanelCard>
         </div>
 
         <div className="space-y-6">
-          <RecentUsersCard users={dashboard.recentUsers} colors={colors} />
+          <RecentUsersCard
+            users={dashboard.recentUsers}
+            rangeLabel={dashboard.rangeLabel}
+            loading={loading}
+            colors={colors}
+          />
           <QuickActionsCard colors={colors} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <ChartCard
-            title="Enrollments, completions and reviews"
-            subtitle="Course performance"
+          <PanelCard
+            title="Course performance"
+            subtitle="Enrollments, completions, and reviews"
             rightLabel={dashboard.rangeLabel}
             colors={colors}
           >
@@ -517,8 +621,14 @@ export default function MainDashboard() {
                     stroke="rgba(255,255,255,0.05)"
                     vertical={false}
                   />
-                  <XAxis dataKey="label" tick={{ fill: colors.text2, fontSize: 12 }} />
-                  <YAxis tick={{ fill: colors.text2, fontSize: 12 }} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: colors.text2, fontSize: 12 }}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fill: colors.text2, fontSize: 12 }}
+                  />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Legend wrapperStyle={{ color: colors.text2 }} />
                   <Bar
@@ -531,7 +641,7 @@ export default function MainDashboard() {
                   <Bar
                     dataKey="completions"
                     name="Completions"
-                    fill={colors.gold || "#EAB308"}
+                    fill={colors.ok || "#22C55E"}
                     radius={[6, 6, 0, 0]}
                     maxBarSize={22}
                   />
@@ -539,22 +649,36 @@ export default function MainDashboard() {
                     type="monotone"
                     dataKey="reviews"
                     name="Reviews"
-                    stroke={colors.purple || "#8B5CF6"}
+                    stroke={colors.purple || "#6E56CF"}
                     strokeWidth={2.5}
                     dot={{ r: 2 }}
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </ChartCard>
+            <ChartFooterNote
+              visible={!loading && !coursePerformanceHasData}
+              message="No course enrollments, completions, or reviews were recorded in this period."
+              colors={colors}
+            />
+          </PanelCard>
         </div>
 
-        <ActivityFeed items={dashboard.recentActivity} />
+        <ActivityFeed
+          items={dashboard.recentActivity}
+          rangeLabel={dashboard.rangeLabel}
+          loading={loading}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <CourseGalleryCard courses={dashboard.recentCourses} colors={colors} />
-        <SystemHealth items={dashboard.health} />
+        <CourseGalleryCard
+          courses={dashboard.recentCourses}
+          rangeLabel={dashboard.rangeLabel}
+          loading={loading}
+          colors={colors}
+        />
+        <SystemHealth items={dashboard.health} loading={loading} />
       </div>
     </div>
   );

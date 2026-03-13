@@ -1,13 +1,70 @@
-// Update this import only if your Supabase client file lives somewhere else.
 import { supabase } from "../lib/supabaseClient";
 
-export const DASHBOARD_RANGE_OPTIONS = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "12m", label: "Last 12 months" },
-  { value: "all", label: "All time" },
-];
+const FALLBACK_LABEL = "\u2014";
+
+const RANGE_DEFINITIONS = {
+  "7d": {
+    label: "Last 7 days",
+    unit: "day",
+    currentDays: 7,
+    previousDays: 7,
+  },
+  "30d": {
+    label: "Last 30 days",
+    unit: "day",
+    currentDays: 30,
+    previousDays: 30,
+  },
+  "90d": {
+    label: "Last 90 days",
+    unit: "month",
+    currentDays: 90,
+    previousDays: 90,
+  },
+  "12m": {
+    label: "Last 12 months",
+    unit: "month",
+    currentMonths: 12,
+    previousMonths: 12,
+  },
+  all: {
+    label: "All time",
+    unit: "month",
+  },
+};
+
+const TABLE_COLUMNS = {
+  users:
+    "id, created_at, email, full_name, role, status, purchased_courses, chassis_uses, last_login_at, avatar_url, phone",
+  courses:
+    "id, title, category, description, level, duration_minutes, thumbnail_url, is_published, created_at",
+  symptoms: "id, title, description, created_by, is_active, created_at",
+  enrollments: "id, user_id, course_id, enrolled_at, completed_at",
+  reviews: "id, course_id, user_id, rating, review_text, created_at",
+};
+
+const dayFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+});
+
+const monthFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "2-digit",
+});
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+export const DASHBOARD_RANGE_OPTIONS = Object.entries(RANGE_DEFINITIONS).map(
+  ([value, config]) => ({
+    value,
+    label: config.label,
+  })
+);
 
 export const EMPTY_DASHBOARD_OVERVIEW = {
   summary: {
@@ -17,15 +74,17 @@ export const EMPTY_DASHBOARD_OVERVIEW = {
     logins: 0,
     enrollments: 0,
     completions: 0,
-    publishedCourses: 0,
-    activeSymptoms: 0,
     avgRating: 0,
+    publishedCourses: 0,
+    totalCourses: 0,
+    activeSymptoms: 0,
+    totalSymptoms: 0,
+    totalReviews: 0,
   },
   changes: {
     newSignups: null,
     logins: null,
     enrollments: null,
-    completions: null,
   },
   charts: {
     userGrowth: [],
@@ -35,567 +94,679 @@ export const EMPTY_DASHBOARD_OVERVIEW = {
   recentCourses: [],
   recentActivity: [],
   health: [],
+  rangeLabel: RANGE_DEFINITIONS["12m"].label,
   lastUpdatedAt: null,
+  lastUpdatedLabel: FALLBACK_LABEL,
 };
 
-function toDate(value) {
+function createReadableError(fallbackMessage, error) {
+  return new Error(error?.message || fallbackMessage);
+}
+
+async function fetchRows(table, columns, fallbackMessage) {
+  const { data, error } = await supabase.from(table).select(columns);
+
+  if (error) {
+    throw createReadableError(fallbackMessage, error);
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+function cleanText(value, fallback = "") {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed || fallback;
+}
+
+function toNumber(value, fallback = 0) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+function parseDateSafe(value) {
   if (!value) return null;
-  const date = new Date(value);
+
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function startOfDay(input) {
-  const date = new Date(input);
+function toTimestamp(value) {
+  const date = parseDateSafe(value);
+  return date ? date.getTime() : null;
+}
+
+function startOfDay(value) {
+  const date = parseDateSafe(value) || new Date();
   date.setHours(0, 0, 0, 0);
   return date;
 }
 
-function endOfDay(input) {
-  const date = new Date(input);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
-
-function startOfMonth(input) {
-  const date = new Date(input);
+function startOfMonth(value) {
+  const date = parseDateSafe(value) || new Date();
   date.setDate(1);
   date.setHours(0, 0, 0, 0);
   return date;
 }
 
-function addDays(input, amount) {
-  const date = new Date(input);
+function addDays(value, amount) {
+  const date = parseDateSafe(value) || new Date();
   date.setDate(date.getDate() + amount);
   return date;
 }
 
-function addMonths(input, amount) {
-  const date = new Date(input);
+function addMonths(value, amount) {
+  const date = startOfMonth(value);
   date.setMonth(date.getMonth() + amount);
-  return date;
+  return startOfMonth(date);
 }
 
-function formatDayLabel(date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(date);
+function formatDateSafe(value) {
+  const date = parseDateSafe(value);
+  return date ? dateFormatter.format(date) : FALLBACK_LABEL;
 }
 
-function formatMonthLabel(date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-  }).format(date);
-}
+function formatRelativeTimeSafe(value, referenceDate = new Date()) {
+  const date = parseDateSafe(value);
+  const reference = parseDateSafe(referenceDate) || new Date();
 
-function formatShortDate(date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
+  if (!date) return FALLBACK_LABEL;
 
-function safeCount(response) {
-  if (response?.error) {
-    throw new Error(response.error.message || "Supabase query failed.");
-  }
-  return response?.count ?? 0;
-}
+  const diffMs = reference.getTime() - date.getTime();
+  if (!Number.isFinite(diffMs)) return FALLBACK_LABEL;
 
-function safeData(response) {
-  if (response?.error) {
-    throw new Error(response.error.message || "Supabase query failed.");
-  }
-  return response?.data ?? [];
-}
-
-function calculateAverage(values = []) {
-  if (!values.length) return 0;
-  const total = values.reduce((sum, value) => sum + Number(value || 0), 0);
-  return total / values.length;
-}
-
-function calculateChange(current, previous) {
-  if (previous == null) return null;
-  if (previous === 0) {
-    return current > 0 ? 100 : 0;
-  }
-  return Number((((current - previous) / previous) * 100).toFixed(2));
-}
-
-function countInWindow(rows, key, start, end) {
-  return rows.reduce((count, row) => {
-    const date = toDate(row[key]);
-    if (!date) return count;
-    if (start && date < start) return count;
-    if (end && date >= end) return count;
-    return count + 1;
-  }, 0);
-}
-
-function buildBuckets(range) {
-  const now = new Date();
-
-  if (range === "7d") {
-    const start = startOfDay(addDays(now, -6));
-    const buckets = [];
-    let cursor = new Date(start);
-
-    while (cursor <= endOfDay(now)) {
-      const next = addDays(cursor, 1);
-      buckets.push({
-        key: cursor.toISOString(),
-        label: formatDayLabel(cursor),
-        start: new Date(cursor),
-        end: next,
-      });
-      cursor = next;
-    }
-
-    return buckets;
+  if (diffMs < 0) {
+    return formatDateSafe(date);
   }
 
-  if (range === "30d") {
-    const start = startOfDay(addDays(now, -29));
-    const buckets = [];
-    let cursor = new Date(start);
+  const diffMinutes = Math.floor(diffMs / 60000);
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
 
-    while (cursor <= endOfDay(now)) {
-      const next = addDays(cursor, 1);
-      buckets.push({
-        key: cursor.toISOString(),
-        label: formatDayLabel(cursor),
-        start: new Date(cursor),
-        end: next,
-      });
-      cursor = next;
-    }
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
 
-    return buckets;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return formatDateSafe(date);
+}
+
+function sortByDateDescending(items, getValue) {
+  return [...items].sort((left, right) => {
+    const leftTime = toTimestamp(getValue(left)) ?? 0;
+    const rightTime = toTimestamp(getValue(right)) ?? 0;
+    return rightTime - leftTime;
+  });
+}
+
+function matchesRange(value, start, endExclusive) {
+  const timestamp = toTimestamp(value);
+  if (timestamp == null) return false;
+
+  if (start && timestamp < start.getTime()) return false;
+  if (endExclusive && timestamp >= endExclusive.getTime()) return false;
+
+  return true;
+}
+
+function filterRowsWithinRange(rows, getDateValue, start, endExclusive) {
+  return rows.filter((row) => matchesRange(getDateValue(row), start, endExclusive));
+}
+
+function countWithinRange(rows, getDateValue, start, endExclusive) {
+  return filterRowsWithinRange(rows, getDateValue, start, endExclusive).length;
+}
+
+function calculateAverageRating(rows) {
+  const ratings = rows
+    .map((row) => toNumber(row.rating, NaN))
+    .filter((value) => Number.isFinite(value));
+
+  if (!ratings.length) return 0;
+
+  const total = ratings.reduce((sum, value) => sum + value, 0);
+  return Number((total / ratings.length).toFixed(1));
+}
+
+function calculateChange(currentValue, previousValue) {
+  if (previousValue == null) return null;
+  if (previousValue === 0) return currentValue > 0 ? 100 : 0;
+
+  return Number((((currentValue - previousValue) / previousValue) * 100).toFixed(1));
+}
+
+function resolveRangeConfig(range, now = new Date()) {
+  const config = RANGE_DEFINITIONS[range] || RANGE_DEFINITIONS["30d"];
+  const currentEndExclusive = new Date(now.getTime() + 1);
+
+  if (range === "all") {
+    return {
+      value: "all",
+      label: config.label,
+      unit: config.unit,
+      currentStart: null,
+      currentEndExclusive,
+      previousStart: null,
+      previousEndExclusive: null,
+    };
   }
 
-  const monthsBack = range === "90d" ? 2 : 11;
-  const start = startOfMonth(addMonths(now, -monthsBack));
-  const end = startOfMonth(addMonths(now, 1));
+  if (range === "12m") {
+    const currentStart = startOfMonth(addMonths(now, -11));
+    const previousStart = startOfMonth(addMonths(currentStart, -12));
+
+    return {
+      value: range,
+      label: config.label,
+      unit: config.unit,
+      currentStart,
+      currentEndExclusive,
+      previousStart,
+      previousEndExclusive: currentStart,
+    };
+  }
+
+  const currentStart = startOfDay(addDays(now, -(config.currentDays - 1)));
+  const previousStart = startOfDay(
+    addDays(currentStart, -config.previousDays)
+  );
+
+  return {
+    value: range,
+    label: config.label,
+    unit: config.unit,
+    currentStart,
+    currentEndExclusive,
+    previousStart,
+    previousEndExclusive: currentStart,
+  };
+}
+
+function collectValidDates(values) {
+  return values
+    .map((value) => parseDateSafe(value))
+    .filter(Boolean);
+}
+
+function resolveBucketWindow(rangeConfig, values, now = new Date()) {
+  if (rangeConfig.unit === "day") {
+    return {
+      start: startOfDay(rangeConfig.currentStart || now),
+      endExclusive: startOfDay(addDays(now, 1)),
+      unit: "day",
+    };
+  }
+
+  if (rangeConfig.value !== "all") {
+    return {
+      start: startOfMonth(rangeConfig.currentStart || now),
+      endExclusive: startOfMonth(addMonths(now, 1)),
+      unit: "month",
+    };
+  }
+
+  const validDates = collectValidDates(values);
+  const earliestDate = validDates.length
+    ? new Date(Math.min(...validDates.map((date) => date.getTime())))
+    : now;
+
+  return {
+    start: startOfMonth(earliestDate),
+    endExclusive: startOfMonth(addMonths(now, 1)),
+    unit: "month",
+  };
+}
+
+function buildBuckets(start, endExclusive, unit) {
   const buckets = [];
   let cursor = new Date(start);
 
-  while (cursor < end) {
-    const next = startOfMonth(addMonths(cursor, 1));
+  while (cursor < endExclusive) {
+    const next = unit === "day" ? startOfDay(addDays(cursor, 1)) : startOfMonth(addMonths(cursor, 1));
+
     buckets.push({
       key: cursor.toISOString(),
-      label: formatMonthLabel(cursor),
+      label: unit === "day" ? dayFormatter.format(cursor) : monthFormatter.format(cursor),
       start: new Date(cursor),
-      end: next,
+      endExclusive: next,
     });
+
     cursor = next;
   }
 
   return buckets;
 }
 
-function resolveRangeMeta(range) {
-  const now = new Date();
+function buildChartSeries(rows, getDateValue, buckets) {
+  return buckets.map((bucket) =>
+    countWithinRange(rows, getDateValue, bucket.start, bucket.endExclusive)
+  );
+}
 
-  if (range === "all") {
-    return {
-      currentStart: null,
-      previousStart: null,
-      previousEnd: null,
-      metricQueryStart: null,
-      chartBuckets: buildBuckets("12m"),
-      label: "All time",
-    };
-  }
-
-  if (range === "7d") {
-    const currentStart = startOfDay(addDays(now, -6));
-    const previousStart = startOfDay(addDays(currentStart, -7));
-    return {
-      currentStart,
-      previousStart,
-      previousEnd: currentStart,
-      metricQueryStart: previousStart,
-      chartBuckets: buildBuckets("7d"),
-      label: "Last 7 days",
-    };
-  }
-
-  if (range === "30d") {
-    const currentStart = startOfDay(addDays(now, -29));
-    const previousStart = startOfDay(addDays(currentStart, -30));
-    return {
-      currentStart,
-      previousStart,
-      previousEnd: currentStart,
-      metricQueryStart: previousStart,
-      chartBuckets: buildBuckets("30d"),
-      label: "Last 30 days",
-    };
-  }
-
-  if (range === "90d") {
-    const currentStart = startOfDay(addDays(now, -89));
-    const previousStart = startOfDay(addDays(currentStart, -90));
-    return {
-      currentStart,
-      previousStart,
-      previousEnd: currentStart,
-      metricQueryStart: previousStart,
-      chartBuckets: buildBuckets("90d"),
-      label: "Last 90 days",
-    };
-  }
-
-  const currentStart = startOfMonth(addMonths(now, -11));
-  const previousStart = startOfMonth(addMonths(currentStart, -12));
+function mapUserRow(row) {
+  const fullName = cleanText(row.full_name);
+  const email = cleanText(row.email);
+  const displayName = fullName || email || "User";
 
   return {
-    currentStart,
-    previousStart,
-    previousEnd: currentStart,
-    metricQueryStart: previousStart,
-    chartBuckets: buildBuckets("12m"),
-    label: "Last 12 months",
+    id: row.id,
+    fullName,
+    email,
+    displayName,
+    role: cleanText(row.role),
+    status: cleanText(row.status).toLowerCase() || "unknown",
+    avatarUrl: cleanText(row.avatar_url) || null,
+    avatarInitial: displayName.charAt(0).toUpperCase() || "U",
+    createdAt: row.created_at || null,
+    lastLoginAt: row.last_login_at || null,
   };
 }
 
-function buildSeriesFromBuckets(rows, key, buckets) {
-  return buckets.map((bucket) => ({
-    key: bucket.key,
-    label: bucket.label,
-    value: countInWindow(rows, key, bucket.start, bucket.end),
-  }));
-}
-
-function mergeActivityItems(items = [], limit = 8) {
-  return [...items]
-    .filter((item) => item?.at)
-    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-    .slice(0, limit);
-}
-
-export async function getDashboardOverview({ range = "30d" } = {}) {
-  const rangeMeta = resolveRangeMeta(range);
-
-  let signupsMetricsQuery = supabase.from("users").select("created_at");
-  let loginsMetricsQuery = supabase
-    .from("users")
-    .select("id, full_name, email, avatar_url, last_login_at")
-    .not("last_login_at", "is", null);
-
-  let enrollmentsMetricsQuery = supabase
-    .from("course_enrollments")
-    .select("enrolled_at, completed_at");
-
-  let reviewsMetricsQuery = supabase
-    .from("course_reviews")
-    .select("id, course_id, user_id, rating, review_text, created_at");
-
-  if (rangeMeta.metricQueryStart) {
-    const isoStart = rangeMeta.metricQueryStart.toISOString();
-
-    signupsMetricsQuery = signupsMetricsQuery.gte("created_at", isoStart);
-    loginsMetricsQuery = loginsMetricsQuery.gte("last_login_at", isoStart);
-    enrollmentsMetricsQuery = enrollmentsMetricsQuery.or(
-      `enrolled_at.gte.${isoStart},completed_at.gte.${isoStart}`
-    );
-    reviewsMetricsQuery = reviewsMetricsQuery.gte("created_at", isoStart);
-  }
-
-  const [
-    totalUsersResponse,
-    activeUsersResponse,
-    publishedCoursesResponse,
-    activeSymptomsResponse,
-    signupsMetricsResponse,
-    loginsMetricsResponse,
-    enrollmentsMetricsResponse,
-    reviewsMetricsResponse,
-    recentUsersResponse,
-    recentCoursesResponse,
-    latestReviewsResponse,
-  ] = await Promise.all([
-    supabase.from("users").select("id", { count: "exact", head: true }),
-    supabase
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "active"),
-    supabase
-      .from("courses")
-      .select("id", { count: "exact", head: true })
-      .eq("is_published", true),
-    supabase
-      .from("chassis_symptoms")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
-    signupsMetricsQuery,
-    loginsMetricsQuery,
-    enrollmentsMetricsQuery,
-    reviewsMetricsQuery,
-    supabase
-      .from("users")
-      .select("id, full_name, email, avatar_url, last_login_at, created_at, status")
-      .or("last_login_at.not.is.null,created_at.not.is.null")
-      .order("last_login_at", { ascending: false, nullsFirst: false })
-      .limit(6),
-    supabase
-      .from("courses")
-      .select(
-        "id, title, category, description, level, duration_minutes, thumbnail_url, is_published, created_at"
-      )
-      .eq("is_published", true)
-      .order("created_at", { ascending: false })
-      .limit(6),
-    supabase
-      .from("course_reviews")
-      .select("id, course_id, user_id, rating, review_text, created_at")
-      .order("created_at", { ascending: false })
-      .limit(6),
-  ]);
-
-  const totalUsers = safeCount(totalUsersResponse);
-  const activeUsers = safeCount(activeUsersResponse);
-  const publishedCourses = safeCount(publishedCoursesResponse);
-  const activeSymptoms = safeCount(activeSymptomsResponse);
-
-  const signupsRows = safeData(signupsMetricsResponse);
-  const loginsRows = safeData(loginsMetricsResponse);
-  const enrollmentsRows = safeData(enrollmentsMetricsResponse);
-  const reviewsRows = safeData(reviewsMetricsResponse);
-  const recentUsers = safeData(recentUsersResponse);
-  const recentCourses = safeData(recentCoursesResponse);
-  const latestReviews = safeData(latestReviewsResponse);
-
-  const userIds = [...new Set(latestReviews.map((row) => row.user_id).filter(Boolean))];
-  const courseIds = [
-    ...new Set(
-      [...latestReviews.map((row) => row.course_id), ...recentCourses.map((row) => row.id)].filter(Boolean)
-    ),
-  ];
-
-  const [reviewUsersResponse, reviewCoursesResponse] = await Promise.all([
-    userIds.length
-      ? supabase
-          .from("users")
-          .select("id, full_name, email, avatar_url")
-          .in("id", userIds)
-      : Promise.resolve({ data: [], error: null }),
-    courseIds.length
-      ? supabase
-          .from("courses")
-          .select("id, title, thumbnail_url, category")
-          .in("id", courseIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-
-  const reviewUsers = safeData(reviewUsersResponse);
-  const reviewCourses = safeData(reviewCoursesResponse);
-
-  const userMap = reviewUsers.reduce((acc, item) => {
-    acc[item.id] = item;
-    return acc;
-  }, {});
-
-  const courseMap = reviewCourses.reduce((acc, item) => {
-    acc[item.id] = item;
-    return acc;
-  }, {});
-
-  const currentStart = rangeMeta.currentStart;
-  const previousStart = rangeMeta.previousStart;
-  const previousEnd = rangeMeta.previousEnd;
-
-  const currentNewSignups =
-    currentStart == null
-      ? totalUsers
-      : countInWindow(signupsRows, "created_at", currentStart, null);
-
-  const previousNewSignups =
-    previousStart == null
-      ? null
-      : countInWindow(signupsRows, "created_at", previousStart, previousEnd);
-
-  const currentLogins =
-    currentStart == null
-      ? loginsRows.length
-      : countInWindow(loginsRows, "last_login_at", currentStart, null);
-
-  const previousLogins =
-    previousStart == null
-      ? null
-      : countInWindow(loginsRows, "last_login_at", previousStart, previousEnd);
-
-  const currentEnrollments =
-    currentStart == null
-      ? enrollmentsRows.length
-      : countInWindow(enrollmentsRows, "enrolled_at", currentStart, null);
-
-  const previousEnrollments =
-    previousStart == null
-      ? null
-      : countInWindow(enrollmentsRows, "enrolled_at", previousStart, previousEnd);
-
-  const currentCompletions =
-    currentStart == null
-      ? enrollmentsRows.filter((row) => row.completed_at).length
-      : countInWindow(enrollmentsRows, "completed_at", currentStart, null);
-
-  const previousCompletions =
-    previousStart == null
-      ? null
-      : countInWindow(enrollmentsRows, "completed_at", previousStart, previousEnd);
-
-  const averageRating = Number(calculateAverage(reviewsRows.map((row) => row.rating)).toFixed(1));
-
-  const signupSeries = buildSeriesFromBuckets(signupsRows, "created_at", rangeMeta.chartBuckets);
-  const loginSeries = buildSeriesFromBuckets(loginsRows, "last_login_at", rangeMeta.chartBuckets);
-  const enrollmentSeries = buildSeriesFromBuckets(
-    enrollmentsRows,
-    "enrolled_at",
-    rangeMeta.chartBuckets
-  );
-  const completionSeries = buildSeriesFromBuckets(
-    enrollmentsRows,
-    "completed_at",
-    rangeMeta.chartBuckets
-  );
-  const reviewSeries = buildSeriesFromBuckets(reviewsRows, "created_at", rangeMeta.chartBuckets);
-
-  const charts = {
-    userGrowth: rangeMeta.chartBuckets.map((bucket, index) => ({
-      key: bucket.key,
-      label: bucket.label,
-      signups: signupSeries[index]?.value ?? 0,
-      logins: loginSeries[index]?.value ?? 0,
-    })),
-    coursePerformance: rangeMeta.chartBuckets.map((bucket, index) => ({
-      key: bucket.key,
-      label: bucket.label,
-      enrollments: enrollmentSeries[index]?.value ?? 0,
-      completions: completionSeries[index]?.value ?? 0,
-      reviews: reviewSeries[index]?.value ?? 0,
-    })),
+function mapCourseRow(row) {
+  return {
+    id: row.id,
+    title: cleanText(row.title) || "Untitled course",
+    category: cleanText(row.category) || "General",
+    description: cleanText(row.description),
+    level: cleanText(row.level) || FALLBACK_LABEL,
+    durationMinutes: toNumber(row.duration_minutes),
+    thumbnailUrl: cleanText(row.thumbnail_url) || null,
+    isPublished: Boolean(row.is_published),
+    createdAt: row.created_at || null,
   };
+}
 
-  const reviewActivity = latestReviews.map((review) => {
-    const reviewUser = userMap[review.user_id];
-    const reviewCourse = courseMap[review.course_id];
+function mapSymptomRow(row) {
+  return {
+    id: row.id,
+    title: cleanText(row.title) || "Untitled symptom",
+    isActive: Boolean(row.is_active),
+    createdAt: row.created_at || null,
+  };
+}
 
-    return {
-      id: `review-${review.id}`,
-      type: "review",
-      title: `${reviewCourse?.title || "Course"} received ${review.rating}-star feedback`,
-      subtitle:
-        review.review_text?.trim() ||
-        reviewUser?.full_name ||
-        reviewUser?.email ||
-        "New review submitted",
-      at: review.created_at,
-      thumbnail: reviewCourse?.thumbnail_url || null,
-    };
-  });
+function mapEnrollmentRow(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id,
+    enrolledAt: row.enrolled_at || null,
+    completedAt: row.completed_at || null,
+  };
+}
 
-  const loginActivity = recentUsers
-    .filter((user) => user.last_login_at)
-    .map((user) => ({
-      id: `login-${user.id}`,
-      type: "login",
-      title: `${user.full_name || user.email || "User"} logged in`,
-      subtitle: user.email || "Recent activity",
-      at: user.last_login_at,
-      thumbnail: user.avatar_url || null,
-    }));
+function mapReviewRow(row) {
+  return {
+    id: row.id,
+    courseId: row.course_id,
+    userId: row.user_id,
+    rating: toNumber(row.rating),
+    reviewText: cleanText(row.review_text),
+    createdAt: row.created_at || null,
+  };
+}
 
-  const courseActivity = recentCourses.map((course) => ({
-    id: `course-${course.id}`,
-    type: "course",
-    title: `Published: ${course.title}`,
-    subtitle: course.category || "Course library",
-    at: course.created_at,
-    thumbnail: course.thumbnail_url || null,
-  }));
+function mapRecentUser(user, now) {
+  if (!parseDateSafe(user.lastLoginAt)) return null;
 
-  const signupActivity = recentUsers
-    .filter((user) => user.created_at)
-    .map((user) => ({
+  return {
+    id: user.id,
+    fullName: user.fullName,
+    email: user.email,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
+    avatarInitial: user.avatarInitial,
+    lastLoginAt: user.lastLoginAt,
+    lastSeenLabel: formatRelativeTimeSafe(user.lastLoginAt, now),
+  };
+}
+
+function mapRecentCourse(course) {
+  if (!course.isPublished || !parseDateSafe(course.createdAt)) return null;
+
+  return {
+    id: course.id,
+    title: course.title,
+    category: course.category,
+    level: course.level,
+    durationMinutes: course.durationMinutes,
+    thumbnailUrl: course.thumbnailUrl,
+    createdAt: course.createdAt,
+    createdLabel: formatDateSafe(course.createdAt),
+    metaLabel: `${course.category} | ${course.level} | ${course.durationMinutes} min`,
+  };
+}
+
+function mapActivityItem(item, now) {
+  if (!parseDateSafe(item.at)) return null;
+
+  return {
+    ...item,
+    subtitle: item.subtitle || FALLBACK_LABEL,
+    thumbnail: item.thumbnail || null,
+    atLabel: formatRelativeTimeSafe(item.at, now),
+  };
+}
+
+function mapSignupActivity(user, now) {
+  return mapActivityItem(
+    {
       id: `signup-${user.id}`,
       type: "signup",
-      title: `${user.full_name || user.email || "User"} signed up`,
+      title: `${user.displayName} signed up`,
       subtitle: user.email || "New user account",
-      at: user.created_at,
-      thumbnail: user.avatar_url || null,
-    }));
+      at: user.createdAt,
+      thumbnail: user.avatarUrl,
+    },
+    now
+  );
+}
 
-  const recentActivity = mergeActivityItems([
-    ...reviewActivity,
-    ...loginActivity,
-    ...courseActivity,
-    ...signupActivity,
-  ]);
+function mapLoginActivity(user, now) {
+  return mapActivityItem(
+    {
+      id: `login-${user.id}`,
+      type: "login",
+      title: `${user.displayName} logged in`,
+      subtitle: user.email || "Recent user login",
+      at: user.lastLoginAt,
+      thumbnail: user.avatarUrl,
+    },
+    now
+  );
+}
 
-  const health = [
+function mapCoursePublishedActivity(course, now) {
+  return mapActivityItem(
+    {
+      id: `course-${course.id}`,
+      type: "course",
+      title: `Published: ${course.title}`,
+      subtitle: `${course.category} course`,
+      at: course.createdAt,
+      thumbnail: course.thumbnailUrl,
+    },
+    now
+  );
+}
+
+function mapReviewActivity(review, courseMap, now) {
+  const course = courseMap.get(review.courseId);
+  const ratingLabel = review.rating > 0 ? `${review.rating}-star review` : "new review";
+
+  return mapActivityItem(
+    {
+      id: `review-${review.id}`,
+      type: "review",
+      title: `${course?.title || "Course"} received ${ratingLabel}`,
+      subtitle: review.reviewText || "New review submitted",
+      at: review.createdAt,
+      thumbnail: course?.thumbnailUrl || null,
+    },
+    now
+  );
+}
+
+function buildHealthItems({
+  totalUsers,
+  activeUsers,
+  totalCourses,
+  publishedCourses,
+  totalSymptoms,
+  activeSymptoms,
+  totalReviews,
+  avgRatingOverall,
+}) {
+  return [
     {
       key: "users",
       label: "Users",
       status: totalUsers > 0 ? "Healthy" : "No data",
-      meta: `${activeUsers} active • ${totalUsers} total`,
+      meta: `${activeUsers} active | ${totalUsers} total`,
     },
     {
       key: "courses",
       label: "Courses",
-      status: publishedCourses > 0 ? "Healthy" : "No data",
-      meta: `${publishedCourses} published`,
+      status: totalCourses > 0 ? "Healthy" : "No data",
+      meta: `${publishedCourses} published | ${totalCourses} total`,
     },
     {
       key: "symptoms",
       label: "Symptoms",
-      status: activeSymptoms > 0 ? "Healthy" : "No data",
-      meta: `${activeSymptoms} active`,
+      status: totalSymptoms > 0 ? "Healthy" : "No data",
+      meta: `${activeSymptoms} active | ${totalSymptoms} total`,
     },
     {
       key: "reviews",
       label: "Reviews",
-      status: reviewsRows.length > 0 ? "Healthy" : "No data",
-      meta: `${reviewsRows.length} total • avg ${averageRating || 0}`,
+      status: totalReviews > 0 ? "Healthy" : "No data",
+      meta: `${totalReviews} total | ${avgRatingOverall.toFixed(1)} avg`,
     },
   ];
+}
+
+export async function getDashboardOverview({ range = "12m" } = {}) {
+  const now = new Date();
+  const rangeConfig = resolveRangeConfig(range, now);
+
+  const [userRows, courseRows, symptomRows, enrollmentRows, reviewRows] =
+    await Promise.all([
+      fetchRows("users", TABLE_COLUMNS.users, "Failed to load users."),
+      fetchRows("courses", TABLE_COLUMNS.courses, "Failed to load courses."),
+      fetchRows("chassis_symptoms", TABLE_COLUMNS.symptoms, "Failed to load symptoms."),
+      fetchRows(
+        "course_enrollments",
+        TABLE_COLUMNS.enrollments,
+        "Failed to load enrollments."
+      ),
+      fetchRows("course_reviews", TABLE_COLUMNS.reviews, "Failed to load reviews."),
+    ]);
+
+  const users = userRows.map(mapUserRow);
+  const courses = courseRows.map(mapCourseRow);
+  const symptoms = symptomRows.map(mapSymptomRow);
+  const enrollments = enrollmentRows.map(mapEnrollmentRow);
+  const reviews = reviewRows.map(mapReviewRow);
+
+  const publishedCourses = courses.filter((course) => course.isPublished);
+  const activeUsers = users.filter((user) => user.status === "active").length;
+  const activeSymptoms = symptoms.filter((symptom) => symptom.isActive).length;
+
+  const currentSignups = filterRowsWithinRange(
+    users,
+    (user) => user.createdAt,
+    rangeConfig.currentStart,
+    rangeConfig.currentEndExclusive
+  );
+  const currentLogins = filterRowsWithinRange(
+    users,
+    (user) => user.lastLoginAt,
+    rangeConfig.currentStart,
+    rangeConfig.currentEndExclusive
+  );
+  const currentEnrollments = filterRowsWithinRange(
+    enrollments,
+    (enrollment) => enrollment.enrolledAt,
+    rangeConfig.currentStart,
+    rangeConfig.currentEndExclusive
+  );
+  const currentCompletions = filterRowsWithinRange(
+    enrollments,
+    (enrollment) => enrollment.completedAt,
+    rangeConfig.currentStart,
+    rangeConfig.currentEndExclusive
+  );
+  const currentReviews = filterRowsWithinRange(
+    reviews,
+    (review) => review.createdAt,
+    rangeConfig.currentStart,
+    rangeConfig.currentEndExclusive
+  );
+
+  const previousSignups = rangeConfig.previousStart
+    ? filterRowsWithinRange(
+        users,
+        (user) => user.createdAt,
+        rangeConfig.previousStart,
+        rangeConfig.previousEndExclusive
+      )
+    : [];
+
+  const previousLogins = rangeConfig.previousStart
+    ? filterRowsWithinRange(
+        users,
+        (user) => user.lastLoginAt,
+        rangeConfig.previousStart,
+        rangeConfig.previousEndExclusive
+      )
+    : [];
+
+  const previousEnrollments = rangeConfig.previousStart
+    ? filterRowsWithinRange(
+        enrollments,
+        (enrollment) => enrollment.enrolledAt,
+        rangeConfig.previousStart,
+        rangeConfig.previousEndExclusive
+      )
+    : [];
+
+  const bucketWindow = resolveBucketWindow(
+    rangeConfig,
+    [
+      ...users.map((user) => user.createdAt),
+      ...users.map((user) => user.lastLoginAt),
+      ...enrollments.map((enrollment) => enrollment.enrolledAt),
+      ...enrollments.map((enrollment) => enrollment.completedAt),
+      ...reviews.map((review) => review.createdAt),
+      ...publishedCourses.map((course) => course.createdAt),
+    ],
+    now
+  );
+
+  const buckets = buildBuckets(
+    bucketWindow.start,
+    bucketWindow.endExclusive,
+    bucketWindow.unit
+  );
+
+  const signupSeries = buildChartSeries(users, (user) => user.createdAt, buckets);
+  const loginSeries = buildChartSeries(users, (user) => user.lastLoginAt, buckets);
+  const enrollmentSeries = buildChartSeries(
+    enrollments,
+    (enrollment) => enrollment.enrolledAt,
+    buckets
+  );
+  const completionSeries = buildChartSeries(
+    enrollments,
+    (enrollment) => enrollment.completedAt,
+    buckets
+  );
+  const reviewSeries = buildChartSeries(reviews, (review) => review.createdAt, buckets);
+
+  const charts = {
+    userGrowth: buckets.map((bucket, index) => ({
+      key: bucket.key,
+      label: bucket.label,
+      signups: signupSeries[index] || 0,
+      logins: loginSeries[index] || 0,
+    })),
+    coursePerformance: buckets.map((bucket, index) => ({
+      key: bucket.key,
+      label: bucket.label,
+      enrollments: enrollmentSeries[index] || 0,
+      completions: completionSeries[index] || 0,
+      reviews: reviewSeries[index] || 0,
+    })),
+  };
+
+  const courseMap = new Map(courses.map((course) => [course.id, course]));
+
+  const recentUsers = sortByDateDescending(
+    currentLogins,
+    (user) => user.lastLoginAt
+  )
+    .slice(0, 6)
+    .map((user) => mapRecentUser(user, now))
+    .filter(Boolean);
+
+  const recentCourses = sortByDateDescending(
+    filterRowsWithinRange(
+      publishedCourses,
+      (course) => course.createdAt,
+      rangeConfig.currentStart,
+      rangeConfig.currentEndExclusive
+    ),
+    (course) => course.createdAt
+  )
+    .slice(0, 6)
+    .map(mapRecentCourse)
+    .filter(Boolean);
+
+  const signupActivity = currentSignups.map((user) => mapSignupActivity(user, now));
+  const loginActivity = currentLogins.map((user) => mapLoginActivity(user, now));
+  const courseActivity = filterRowsWithinRange(
+    publishedCourses,
+    (course) => course.createdAt,
+    rangeConfig.currentStart,
+    rangeConfig.currentEndExclusive
+  ).map((course) => mapCoursePublishedActivity(course, now));
+  const reviewActivity = currentReviews.map((review) =>
+    mapReviewActivity(review, courseMap, now)
+  );
+
+  const recentActivity = sortByDateDescending(
+    [...signupActivity, ...loginActivity, ...courseActivity, ...reviewActivity].filter(
+      Boolean
+    ),
+    (item) => item.at
+  ).slice(0, 8);
+
+  const avgRatingCurrent = calculateAverageRating(currentReviews);
+  const avgRatingOverall = calculateAverageRating(reviews);
 
   return {
     summary: {
-      totalUsers,
+      totalUsers: users.length,
       activeUsers,
-      newSignups: currentNewSignups,
-      logins: currentLogins,
-      enrollments: currentEnrollments,
-      completions: currentCompletions,
-      publishedCourses,
+      newSignups: currentSignups.length,
+      logins: currentLogins.length,
+      enrollments: currentEnrollments.length,
+      completions: currentCompletions.length,
+      avgRating: avgRatingCurrent,
+      publishedCourses: publishedCourses.length,
+      totalCourses: courses.length,
       activeSymptoms,
-      avgRating: averageRating,
+      totalSymptoms: symptoms.length,
+      totalReviews: reviews.length,
     },
     changes: {
-      newSignups: calculateChange(currentNewSignups, previousNewSignups),
-      logins: calculateChange(currentLogins, previousLogins),
-      enrollments: calculateChange(currentEnrollments, previousEnrollments),
-      completions: calculateChange(currentCompletions, previousCompletions),
+      newSignups: rangeConfig.previousStart
+        ? calculateChange(currentSignups.length, previousSignups.length)
+        : null,
+      logins: rangeConfig.previousStart
+        ? calculateChange(currentLogins.length, previousLogins.length)
+        : null,
+      enrollments: rangeConfig.previousStart
+        ? calculateChange(currentEnrollments.length, previousEnrollments.length)
+        : null,
     },
     charts,
-    recentUsers: recentUsers
-      .filter((user) => user.last_login_at || user.created_at)
-      .sort((a, b) => {
-        const dateA = new Date(b.last_login_at || b.created_at).getTime();
-        const dateB = new Date(a.last_login_at || a.created_at).getTime();
-        return dateA - dateB;
-      })
-      .slice(0, 6),
-    recentCourses: recentCourses.map((course) => ({
-      ...course,
-      created_label: course.created_at ? formatShortDate(course.created_at) : "—",
-    })),
+    recentUsers,
+    recentCourses,
     recentActivity,
-    health,
-    rangeLabel: rangeMeta.label,
-    lastUpdatedAt: new Date().toISOString(),
+    health: buildHealthItems({
+      totalUsers: users.length,
+      activeUsers,
+      totalCourses: courses.length,
+      publishedCourses: publishedCourses.length,
+      totalSymptoms: symptoms.length,
+      activeSymptoms,
+      totalReviews: reviews.length,
+      avgRatingOverall,
+    }),
+    rangeLabel: rangeConfig.label,
+    lastUpdatedAt: now.toISOString(),
+    lastUpdatedLabel: formatRelativeTimeSafe(now, now),
   };
 }

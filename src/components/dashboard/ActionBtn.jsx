@@ -13,7 +13,7 @@ export default function ActionBtn({
   const { colors } = useTheme();
 
   const sharedClassName =
-    "inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all";
+    "inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition";
 
   const sharedStyle = {
     borderColor: colors.ring,
@@ -33,7 +33,12 @@ export default function ActionBtn({
 
   if (to) {
     return (
-      <Link to={to} className={sharedClassName} style={sharedStyle}>
+      <Link
+        to={to}
+        className={sharedClassName}
+        style={sharedStyle}
+        aria-disabled={disabled}
+      >
         {content}
       </Link>
     );

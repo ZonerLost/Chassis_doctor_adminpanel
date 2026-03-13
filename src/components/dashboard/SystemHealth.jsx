@@ -1,7 +1,7 @@
 import React from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 
-export default function SystemHealth({ items = [] }) {
+export default function SystemHealth({ items = [], loading = false }) {
   const { colors } = useTheme();
 
   return (
@@ -9,16 +9,38 @@ export default function SystemHealth({ items = [] }) {
       className="rounded-2xl border p-4"
       style={{ backgroundColor: colors.bg2, borderColor: colors.ring }}
     >
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div className="text-sm font-semibold" style={{ color: colors.text }}>
           Data Health
         </div>
         <div className="text-xs" style={{ color: colors.text2 }}>
-          Users, content and feedback
+          Users, courses, symptoms, reviews
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="rounded-xl border p-3"
+              style={{
+                backgroundColor: colors.card || colors.hover,
+                borderColor: colors.ring,
+              }}
+            >
+              <div
+                className="mb-2 h-4 w-24 rounded"
+                style={{ backgroundColor: colors.hover }}
+              />
+              <div
+                className="h-3 w-40 rounded"
+                style={{ backgroundColor: colors.hover }}
+              />
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <div className="text-sm" style={{ color: colors.text2 }}>
           No health data found.
         </div>
@@ -30,30 +52,32 @@ export default function SystemHealth({ items = [] }) {
             return (
               <div
                 key={item.key}
-                className="flex items-center justify-between gap-3 rounded-xl p-3"
+                className="flex items-center justify-between gap-3 rounded-xl border p-3"
                 style={{
                   backgroundColor: colors.card || colors.hover,
-                  border: `1px solid ${colors.ring}`,
+                  borderColor: colors.ring,
                 }}
               >
                 <div className="min-w-0">
                   <div
-                    className="text-sm font-medium capitalize"
+                    className="text-sm font-medium"
                     style={{ color: colors.text }}
                   >
                     {item.label}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: colors.text2 }}>
+                  <div className="mt-1 text-xs" style={{ color: colors.text2 }}>
                     {item.meta}
                   </div>
                 </div>
 
                 <div
-                  className="text-xs px-2.5 py-1 rounded-full whitespace-nowrap"
+                  className="whitespace-nowrap rounded-full px-2.5 py-1 text-xs"
                   style={{
-                    color: isHealthy ? colors.accent : "#f59e0b",
+                    color: isHealthy ? colors.ok || colors.accent : colors.warn,
+                    backgroundColor: isHealthy
+                      ? "rgba(34,197,94,0.12)"
+                      : "rgba(245,158,11,0.14)",
                     border: `1px solid ${colors.ring}`,
-                    backgroundColor: colors.hover,
                   }}
                 >
                   {item.status}
