@@ -204,7 +204,7 @@ export default function LeftSidebar({
                 className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent text-lg"
                 style={{ fontWeight: "800" }}
               >
-                MotorSport
+                Chassis Doctor
               </span>
             </div>
           </div>

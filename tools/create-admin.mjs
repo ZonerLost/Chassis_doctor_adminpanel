@@ -80,7 +80,7 @@ if (
 
 if (!email || !password) {
   console.error(
-    'Usage: node tools/create-admin.mjs "admin@example.com" "StrongPass123!" "Full Name" "system_admin"'
+    'Usage: node tools/create-admin.mjs "rashidiyaoo7@gmail.com" "123456" "Full Name" "system_admin"'
   );
   process.exit(1);
 }

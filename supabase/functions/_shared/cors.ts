@@ -3,7 +3,7 @@
  * Provides a single source of truth for allowed origins, headers, and methods.
  */
 
-const STATIC_ALLOWED_ORIGINS = ["http://localhost:5174", "http://localhost:5173"];
+const STATIC_ALLOWED_ORIGINS = ["http://localhost:5174", "http://localhost:5173 , chassisdoctoradminpanel-lemon.vercel.app"];
 const ORIGIN_ENV_KEYS = [
   "ALLOWED_ORIGINS",
   "SUPABASE_ALLOWED_ORIGINS",
@@ -30,9 +30,19 @@ function normalizeOrigin(value: string | null | undefined) {
   return String(value || "").trim().replace(/\/+$/, "");
 }
 
+function getEnvValue(key: string) {
+  const deno = (
+    globalThis as typeof globalThis & {
+      Deno?: { env?: { get?: (envKey: string) => string | undefined } };
+    }
+  ).Deno;
+
+  return String(deno?.env?.get?.(key) || "");
+}
+
 function getOriginsFromEnv() {
   return ORIGIN_ENV_KEYS.flatMap((key) =>
-    String(Deno.env.get(key) || "")
+    getEnvValue(key)
       .split(",")
       .map((origin) => normalizeOrigin(origin))
       .filter(Boolean)
@@ -43,7 +53,7 @@ export const ALLOWED_ORIGINS = Array.from(
   new Set([...STATIC_ALLOWED_ORIGINS, ...getOriginsFromEnv()])
 );
 
-const DEFAULT_ALLOW_ORIGIN = ALLOWED_ORIGINS[0] || "http://localhost:5174";
+const DEFAULT_ALLOW_ORIGIN = ALLOWED_ORIGINS[0] || "http://localhost:5173";
 
 export function isAllowedOrigin(origin: string | null | undefined) {
   const normalizedOrigin = normalizeOrigin(origin);

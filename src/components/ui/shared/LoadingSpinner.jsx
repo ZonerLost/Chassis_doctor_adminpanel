@@ -80,4 +80,5 @@ const LoadingSpinner = ({ label = "Loading...", subtle = false }) => {
   );
 };
 
+export { LoadingSpinner };
 export default LoadingSpinner;
