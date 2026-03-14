@@ -2,6 +2,7 @@
  * Supabase edge function that creates admin-managed user accounts via secure server context.
  * Validates request payloads before invoking privileged auth and metadata operations.
  */
+/// <reference path="../_shared/npm-supabase-js.d.ts" />
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
@@ -36,7 +37,7 @@ const USER_SELECT = [
  *      -H "Access-Control-Request-Method: POST" \
  *      -H "Access-Control-Request-Headers: authorization,apikey,content-type,x-client-info" \
  *      https://pmhsmskjxywqtkyhdvgj.supabase.co/functions/v1/admin-create-user
- * 3) Confirm OPTIONS returns 200/204 and POST calls proceed in the browser.
+ * 3) Confirm OPTIONS returns 200 and POST calls proceed in the browser.
  */
 
 function trimToNull(value: unknown) {
@@ -68,6 +69,15 @@ function normalizeErrorMessage(error: unknown, fallback: string) {
   };
 
   return known[rawMessage] || rawMessage;
+}
+
+function hasStringId(value: unknown): value is { id: string } {
+  if (!value || typeof value !== "object" || !("id" in value)) {
+    return false;
+  }
+
+  const id = (value as { id?: unknown }).id;
+  return typeof id === "string" && id.trim().length > 0;
 }
 
 function validatePayload(payload: Record<string, unknown>) {
@@ -140,7 +150,32 @@ function successResponse(
   return jsonResponse(corsHeaders, { success: true, data }, status);
 }
 
-Deno.serve(async (request) => {
+type DenoRuntime = {
+  env?: { get?: (envKey: string) => string | undefined };
+  serve?: (
+    handler: (request: Request) => Response | Promise<Response>
+  ) => void;
+};
+
+const denoRuntime = (
+  globalThis as typeof globalThis & { Deno?: DenoRuntime }
+).Deno;
+
+function getEnvValue(key: string) {
+  return String(denoRuntime?.env?.get?.(key) || "");
+}
+
+function serveEdge(
+  handler: (request: Request) => Response | Promise<Response>
+) {
+  if (!denoRuntime?.serve) {
+    throw new Error("Deno.serve is unavailable in this runtime.");
+  }
+
+  denoRuntime.serve(handler);
+}
+
+serveEdge(async (request) => {
   const requestOrigin = request.headers.get("origin");
   const originAllowed = isAllowedOrigin(requestOrigin);
   const corsHeaders = getCorsHeaders(requestOrigin);
@@ -153,7 +188,7 @@ Deno.serve(async (request) => {
 
   // Handle preflight before method, auth, or payload checks.
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   if (request.method !== "POST") {
@@ -183,10 +218,10 @@ Deno.serve(async (request) => {
   let failureStep = "config";
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+    const SUPABASE_URL = getEnvValue("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY =
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
-      Deno.env.get("SUPABASE_SECRET_KEY") ||
+      getEnvValue("SUPABASE_SERVICE_ROLE_KEY") ||
+      getEnvValue("SUPABASE_SECRET_KEY") ||
       "";
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -357,7 +392,7 @@ Deno.serve(async (request) => {
       .select(USER_SELECT)
       .single();
 
-    if (profileError || !createdProfile?.id) {
+    if (profileError || !hasStringId(createdProfile)) {
       await adminClient.auth.admin.deleteUser(createdUserId).catch(() => {});
 
       return errorResponse(

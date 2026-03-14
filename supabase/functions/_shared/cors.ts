@@ -3,7 +3,12 @@
  * Provides a single source of truth for allowed origins, headers, and methods.
  */
 
-const STATIC_ALLOWED_ORIGINS = ["http://localhost:5174", "http://localhost:5173 , chassisdoctoradminpanel-lemon.vercel.app"];
+const STATIC_ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "https://chassisdoctoradminpanel-lemon.vercel.app",
+];
 const ORIGIN_ENV_KEYS = [
   "ALLOWED_ORIGINS",
   "SUPABASE_ALLOWED_ORIGINS",
@@ -43,7 +48,7 @@ function getEnvValue(key: string) {
 function getOriginsFromEnv() {
   return ORIGIN_ENV_KEYS.flatMap((key) =>
     getEnvValue(key)
-      .split(",")
+      .split(/[,\n]/)
       .map((origin) => normalizeOrigin(origin))
       .filter(Boolean)
   );
